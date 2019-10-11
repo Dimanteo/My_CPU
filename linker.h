@@ -6,19 +6,19 @@
 #define LINKER_H
 
 const char VERSION = 1;
-const unsigned int SIGNATURE =  'UHC';
+const unsigned int SIGNATURE =  'mtfl';
 
-enum cmd_code {END = 0, PUSH, POP, ADD, SUB, DIV, MUL, SQR, SIN, COS, XPUSH, XPOP, CMD_COUNT}; //CMD_COUNT всегда должен быть в конце enum
-enum reg_code {AX, BX, CX, DX};
+enum CMD_CODE {END = 0, PUSH, POP, ADD, SUB, DIV, MUL, SQR, SIN, COS, XPUSH, XPOP, CMD_COUNT}; //CMD_COUNT всегда должен быть в конце enum
+enum REG_CODE {AX = 0xAAAA, BX = 0xBBBB, CX = 0xCCCC, DX = 0xDDDD};
 const int CMD_CODE_VALUES_BEGIN = END;
 const int CMD_CODE_VALUES_END = CMD_COUNT - 1;
 const size_t MAX_COMMAND_LEN = 10;
 const size_t MAX_ARG_LEN = 100;
 
-//все эти заморочки нужны для того чтобы дегко добавлять новые команды
+//все эти заморочки нужны для того чтобы дегко добавлять новые команды c произвольным количеством параметров
 struct Command
 {
-    unsigned char code;
+    CMD_CODE code;
     size_t args_n;
     const char str[MAX_COMMAND_LEN];
 };
