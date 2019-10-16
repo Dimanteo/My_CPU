@@ -9,6 +9,8 @@ const char VERSION = 1;
 const unsigned int SIGNATURE =  'kauq';
 const int MAX_CMD_LEN = 10;
 const int MAX_NUM_ARGS = 1;
+const char BIN_FILE_NAME[] = "../bin.dak";
+
 enum REG_CODE {
     AX = 0xAAAA,
     BX = 0xBBBB,
@@ -20,6 +22,5 @@ enum REG_CODE {
         #include "commands.h"
     };
 #undef DEF_CMD
-
 
 #endif

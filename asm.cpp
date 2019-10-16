@@ -1,7 +1,8 @@
-#include <cmath>
 #include <ctime>
-#include "txt_files.h"
+#include <cmath>
+#include "My_Headers/txt_files.h"
 #include "linker.h"
+
 
 
 int translate_reg(char reg[2]);
@@ -47,17 +48,17 @@ int main()
                 bin_ptr++;\
                 size_bin += sizeof(char) + n_args * sizeof(int);\
                 for(int j = 0; j < n_args; j++) {\
-                    int arg = 0;\
+                    double farg = 0;\
                     char reg[2] = {};\
-                    if(sscanf(data[pc].begin + symb_passed, "%d%n", &arg, &symb_passed) == 1) {\
-                        *((int*)bin_ptr) = arg;\
-                        fprintf(listing, " %.8X", arg);\
+                    if(sscanf(data[pc].begin + symb_passed, "%lf%n", &farg, &symb_passed) == 1) {\
+                        *((int*)bin_ptr) = (int)round(farg * 1000);\
+                        fprintf(listing, " %.8X", *((int*)bin_ptr));\
                         bin_ptr += sizeof(int);\
                     } else {\
                         sscanf(data[pc].begin + symb_passed, "%s%n", reg, &symb_passed);\
-                        arg = translate_reg(reg);\
+                        int arg = translate_reg(reg);\
                         *((int*)bin_ptr) = arg;\
-                        fprintf(listing, " %.8X", arg);\
+                        fprintf(listing, " %.8X", *((int*)bin_ptr));\
                         bin_ptr += sizeof(int);\
                     }\
                 }\
