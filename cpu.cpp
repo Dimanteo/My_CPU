@@ -1,8 +1,13 @@
 #include "cassert"
 #include <math.h>
+#define NO_HASH
+#define OK_DUMP
 #include "My_Headers/protected_stack.h"
 #include "My_Headers/txt_files.h"
 #include "linker.h"
+
+const char CPU_LOG_NAME[] = "../log.txt";
+const char STACK_LOG_NAME[] = "../Stack_Log.txt";
 
 struct CPU {
     const char tag[MAX_NAME_LENGTH];
@@ -27,13 +32,18 @@ int main() {
     char* bin = read_file_to_buffer_alloc(BIN_FILE_NAME, "rb", &size_bin);
     assert(bin);
     char* pc = bin;
+
     FILE* cpu_out = fopen("../cpu_out.txt", "wb");
     assert(cpu_out);
+    FILE* log = fopen(CPU_LOG_NAME, "wb");
+    assert(log);
+    fclose(log);
+    stack_reopen_log(&cpu.stack, STACK_LOG_NAME);
 
     int signature = *(int*)pc;
     if (signature != SIGNATURE) {
         fprintf(stderr, "Error in CPU(%s)\nSignature mismatch SIGNATURE: %d\nActual SIGNATURE: %d.\n", cpu.tag, signature, SIGNATURE);
-        FILE* log = open_stack_log();
+        log = fopen(CPU_LOG_NAME, "ab");
         assert(log);
         fprintf(log, "Error in CPU(%s)\nSignature mismatch SIGNATURE: %d\nActual SIGNATURE: %d.\n", cpu.tag, signature, SIGNATURE);
         fwrite(bin, sizeof(char), size_bin, log);
@@ -46,7 +56,7 @@ int main() {
     char version = *pc;
     if (version != VERSION) {
         fprintf(stderr, "Version mismatch. Outdated bin file.\n File VERSION: %d.\nProgram VERSION: %d.\n Compile bin and restart program.\n", version, VERSION);
-        FILE* log = open_stack_log();
+        log = fopen(DEFAULT_STACK_LOG_NAME, "ab");
         assert(log);
         fprintf(log, "Error in CPU(%s)\nVersion mismatch. Outdated bin file\n File VERSION: %d.\nProgram VERSION: %d.\nCompile bin and restart program.\n", cpu.tag, version, VERSION);
         fwrite(bin, sizeof(char), size_bin, log);
@@ -92,10 +102,15 @@ bool cpu_verify (CPU* cpu, const char filename[], const char function[], int lin
         cpu_dump(cpu, "cpu_canary2 has changed", ERR_STATE, filename, function, line);
         return false;
     }
+
     if(!stack_OK(&cpu->stack, filename, function, line)) {
         cpu_dump(cpu, "cpu.stack error", ERR_STATE, filename, function, line);
         return false;
     }
+
+#ifdef OK_DUMP
+    cpu_dump(cpu, "Calm down. It's ok", OK_STATE, filename, function, line);
+#endif
 
 #endif
     return true;
@@ -126,11 +141,12 @@ void cpu_destruct(CPU *cpu) {
 
 void cpu_dump(CPU *cpu, const char reason[], const char state[], const char filename[], const char func[], int line) {
 
-    FILE* log = open_stack_log();
+    FILE* log = fopen(CPU_LOG_NAME, "ab");
     assert(log);
 
     if(cpu == nullptr) {
         fprintf(log, "Dump(%s) From %s; %s (%d)\n\tCPU [NULL pointer] (%s)\n", reason, filename, func, line, state);
+        fclose(log);
         return;
     }
 
@@ -151,8 +167,12 @@ void cpu_dump(CPU *cpu, const char reason[], const char state[], const char file
                  cpu->reg[DX], cpu->reg[DX] == POISON ? "(POISON?)" : "",
                  &cpu->stack, cpu->stack.tag, cpu->cpu_canary2);
     fclose(log);
+
+    stack_reopen_log(&cpu->stack, CPU_LOG_NAME);
     stack_dump(&cpu->stack, "call by CPU_dump", strcmp(state, OK_STATE) ? PARENT_OK : PARENT_ERR, filename, func, line);
-    log = open_stack_log();
+    stack_reopen_log(&cpu->stack, STACK_LOG_NAME);
+
+    log = fopen(CPU_LOG_NAME, "ab");
     assert(log);
     fprintf(log, "} end of CPU Dump(%s)\n", cpu->tag);
 

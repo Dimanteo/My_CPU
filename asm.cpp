@@ -34,23 +34,28 @@ int main()
 
     //транслируем команды
     size_t size_bin = sizeof(SIGNATURE) + sizeof(VERSION);
-    for (int pc = 0; pc < number_lines; ++pc) {
+    for (int pc = 0; pc < number_lines; ++pc)
+    {
         char cmd[MAX_CMD_LEN] = {};
         int symb_passed = 0;
         sscanf(data[pc].begin, "%s%n", cmd, &symb_passed);
-        for (int i = 0; i < symb_passed; ++i) {
+        for (int i = 0; i < symb_passed; ++i)
+        {
             cmd[i] = toupper(cmd[i]);
         }
         #define DEF_CMD(name, code, n_args) \
-            if(strcmp(#name, cmd) == 0) {\
+            if(strcmp(#name, cmd) == 0)\
+            {\
                 *bin_ptr = (char)code;\
                 fprintf(listing, "%X", code);\
                 bin_ptr++;\
                 size_bin += sizeof(char) + n_args * sizeof(int);\
-                for(int j = 0; j < n_args; j++) {\
+                for(int j = 0; j < n_args; j++) \
+                {\
                     double farg = 0;\
                     char reg[2] = {};\
-                    if(sscanf(data[pc].begin + symb_passed, "%lf%n", &farg, &symb_passed) == 1) {\
+                    if(sscanf(data[pc].begin + symb_passed, "%lf%n", &farg, &symb_passed) == 1) \
+                    {\
                         *((int*)bin_ptr) = (int)round(farg * 1000);\
                         fprintf(listing, " %.8X", *((int*)bin_ptr));\
                         bin_ptr += sizeof(int);\
@@ -82,17 +87,22 @@ int main()
     return 0;
 }
 
-int translate_reg(char reg[2]) {
-    if(strcmp(reg, "ax") == 0) {
+int translate_reg(char reg[2])
+{
+    if(strcmp(reg, "ax") == 0)
+    {
         return AX;
     }
-    if(strcmp(reg, "bx") == 0) {
+    if(strcmp(reg, "bx") == 0)
+    {
         return BX;
     }
-    if(strcmp(reg, "cx") == 0) {
+    if(strcmp(reg, "cx") == 0)
+    {
         return CX;
     }
-    if(strcmp(reg, "dx") == 0) {
+    if(strcmp(reg, "dx") == 0)
+    {
         return DX;
     }
     return 0;
