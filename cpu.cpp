@@ -28,10 +28,41 @@ int main() {
     size_t size_bin = 0;
     char* bin = read_file_to_buffer_alloc(BIN_FILE_NAME, "rb", &size_bin);
     assert(bin);
+    char* pc = bin;
 
-    for (char* pc = bin; *pc < 0; ++pc) {
-
+    int signature = *(int*)pc;
+    if (signature != SIGNATURE) {
+        fprintf(stderr, "Error in CPU(%s)\nSignature mismatch SIGNATURE: %d\nActual SIGNATURE: %d.\n", cpu.tag, signature, SIGNATURE);
+        FILE* log = open_stack_log();
+        assert(log);
+        fprintf(log, "Error in CPU(%s)\nSignature mismatch SIGNATURE: %d\nActual SIGNATURE: %d.\n", cpu.tag, signature, SIGNATURE);
+        fwrite(bin, sizeof(char), size_bin, log);
+        fprintf(log, "\n");
+        fclose(log);
+        assert(signature == SIGNATURE);
     }
+    pc += sizeof(SIGNATURE);
+
+    char version = *pc;
+    if (version != VERSION) {
+        fprintf(stderr, "Version mismatch. Outdated bin file.\n File VERSION: %d.\nProgram VERSION: %d.\n Compile bin and restart program.\n", version, VERSION);
+        FILE* log = open_stack_log();
+        assert(log);
+        fprintf(log, "Error in CPU(%s)\nVersion mismatch. Outdated bin file\n File VERSION: %d.\nProgram VERSION: %d.\nCompile bin and restart program.\n", cpu.tag, version, VERSION);
+        fwrite(bin, sizeof(char), size_bin, log);
+        fprintf(log, "\n");
+        fclose(log);
+        assert(signature == SIGNATURE);
+    }
+    pc++;
+
+    /*while (*pc != 0) {
+        switch (*pc) {
+            case CMD_PUSH:
+
+                break;
+        }
+    }*/
 
     cpu_destruct(&cpu);
     free(bin);
@@ -75,8 +106,8 @@ void cpu_destruct(CPU *cpu) {
 }
 
 void cpu_dump(CPU *cpu, const char reason[], const char state[], const char filename[], const char func[], int line) {
-    FILE* log = fopen(LOG_NAME, LOG_OPENED ? "a" : "w");
-    LOG_OPENED = true;
+
+    FILE* log = open_stack_log();
     assert(log);
 
     if(cpu == nullptr) {
