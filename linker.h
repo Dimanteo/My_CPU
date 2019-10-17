@@ -12,12 +12,12 @@ const int MAX_NUM_ARGS = 1;
 const char BIN_FILE_NAME[] = "../bin.dak";
 
 enum REG_CODE {
-    AX = 0xAAAA,
-    BX = 0xBBBB,
-    CX = 0xCCCC,
-    DX = 0xDDDD
+    AX = 0, //было бы неплохо сделать 0xAAAA
+    BX = 1,
+    CX = 2,
+    DX = 3
 };
-#define DEF_CMD(name, code, n_args) CMD_##name = code,
+#define DEF_CMD(name, code, n_args, instructions) CMD_##name = code,
     enum CMD_CODE{
         #include "commands.h"
     };
