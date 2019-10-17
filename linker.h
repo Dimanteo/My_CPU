@@ -1,11 +1,5 @@
-//
-// Created by dimanteo on 11.10.2019.
-//
 
-#ifndef LINKER_H
-#define LINKER_H
-
-const char VERSION = 1;
+const char VERSION = 2;
 const unsigned int SIGNATURE =  'kauq';
 const int MAX_CMD_LEN = 10;
 const int MAX_NUM_ARGS = 1;
@@ -22,5 +16,3 @@ enum REG_CODE {
         #include "commands.h"
     };
 #undef DEF_CMD
-
-#endif

@@ -1,5 +1,6 @@
 #include "cassert"
-#include <math.h>
+#include <cmath>
+
 #define NO_HASH
 #define OK_DUMP
 #include "My_Headers/protected_stack.h"
@@ -75,7 +76,7 @@ int main() {
                 for(int i = 0; i < n_arg; i++) {\
                     arg_v[i] = *((int*)(pc + 1) + i);\
                 }\
-                instructions\
+                instructions;\
                 pc += sizeof(int) * n_arg + sizeof(char);\
                 break;\
             }

@@ -43,7 +43,7 @@ int main()
         {
             cmd[i] = toupper(cmd[i]);
         }
-        #define DEF_CMD(name, code, n_args) \
+        #define DEF_CMD(name, code, n_args, instructions) \
             if(strcmp(#name, cmd) == 0)\
             {\
                 *bin_ptr = (char)code;\
