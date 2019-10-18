@@ -39,35 +39,39 @@ int main()
         char cmd[MAX_CMD_LEN] = {};
         int symb_passed = 0;
         sscanf(data[pc].begin, "%s%n", cmd, &symb_passed);
-        for (int i = 0; i < symb_passed; ++i)
-        {
-            cmd[i] = toupper(cmd[i]);
-        }
-        #define DEF_CMD(name, code, n_args, instructions) \
-            if(strcmp(#name, cmd) == 0)\
+        char sarg[MAX_REG_LEN + 1] = {};//+1 for \0
+        double tmp_crutch = 0;
+        double* darg = &tmp_crutch;
+        //TODO решить проблему переопределения операторов ассемблера.
+        #define DEF_CMD(name, token, scanf_sample, code, n_args, instructions) \
+            if((strcmp(#token, cmd) == 0) /*&&*/ scanf_sample)\
             {\
                 *bin_ptr = (char)code;\
-                fprintf(listing, "%X", code);\
+                fprintf(listing, "%d[%X]", code, code);\
                 bin_ptr++;\
                 size_bin += sizeof(char) + n_args * sizeof(int);\
                 for(int j = 0; j < n_args; j++) \
                 {\
                     double farg = 0;\
-                    char reg[2] = {};\
-                    if(sscanf(data[pc].begin + symb_passed, "%lf%n", &farg, &symb_passed) == 1) \
+                    char reg[MAX_REG_LEN + 1] = {};\
+                    int tmp_symb_passed = 0;\
+                    if(sscanf(data[pc].begin + symb_passed, "%lf%n", &farg, &tmp_symb_passed)) \
                     {\
+                        symb_passed += tmp_symb_passed;\
                         *((int*)bin_ptr) = (int)round(farg * 1000);\
-                        fprintf(listing, " %.8X", *((int*)bin_ptr));\
+                        fprintf(listing, " %d[%.8X]", *((int*)bin_ptr), *((int*)bin_ptr));\
                         bin_ptr += sizeof(int);\
                     } else {\
-                        sscanf(data[pc].begin + symb_passed, "%s%n", reg, &symb_passed);\
+                        sscanf(data[pc].begin + symb_passed, "%s%n", reg, &tmp_symb_passed);\
+                        symb_passed += tmp_symb_passed;\
                         int arg = translate_reg(reg);\
                         *((int*)bin_ptr) = arg;\
-                        fprintf(listing, " %.8X", *((int*)bin_ptr));\
+                        fprintf(listing, " %d[%.8X]", *((int*)bin_ptr), *((int*)bin_ptr));\
                         bin_ptr += sizeof(int);\
                     }\
                 }\
                 fprintf(listing,"\n");\
+                continue;\
             }
         #include "commands.h"
         #undef DEF_CMD
@@ -105,7 +109,7 @@ int translate_reg(char reg[2])
     {
         return DX;
     }
-    return 0;
+    return 0xDEADBEEF;
 }
 
 

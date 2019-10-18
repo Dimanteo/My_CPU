@@ -69,7 +69,7 @@ int main() {
 
     while (*pc != 0) {
         switch (*pc) {
-#define DEF_CMD(name, code, n_arg, instructions) \
+#define DEF_CMD(name, token, scanf_sample, code, n_arg, instructions) \
             case code:\
             {\
                 int arg_v[n_arg] = {};\
@@ -86,7 +86,6 @@ int main() {
         cpu_verify(&cpu, __FILE__, __PRETTY_FUNCTION__, __LINE__);
     }
 
-    printf("oh shit, I' made it this far");
     fclose(cpu_out);
     cpu_destruct(&cpu);
     free(bin);
