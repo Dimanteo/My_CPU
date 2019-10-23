@@ -33,8 +33,6 @@
     DEF_CMD(JUMPNE, jne, SCANsample(" %s", sarg), 18, 1, if(cPOP != cPOP) {pc = bin + arg_v[0]; break;} , " %d"$ *(int*)(pc + 1))
     DEF_CMD(CALL, call, SCANsample(" %s", sarg), 19, 1, cPUSH(pc + 1 + sizeof(int) - bin); pc = bin + arg_v[0]; break; , " %d"$ *(int*)(pc + 1))
     DEF_CMD(RET, ret, /*scanf_sample*/, 20, 0, pc = bin + cPOP; break; , /*disasm_print*/)
-    //Это понты тем, насколько все легко расширять. Переопределенный PUSH который выводит на экран произведение суммы двух регистров на число.
-    DEF_CMD(ADAPTIVITY_TEST, push, SCANsample(" %lf %s %s", darg $ sarg $ sarg), 42, 3, cPRINT((double)arg_v[0] * (cREG(arg_v[1]) + cREG(arg_v[2])) / PRECISION), getARG)
 
 #undef $
 #undef getARG

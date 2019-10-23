@@ -3,7 +3,7 @@
 #include "My_Headers/txt_files.h"
 #include "linker.h"
 
-const char INPUT_FILENAME[] = "../asm_stdin.txt";
+const char INPUT_FILENAME[] = "../Tests/QEquation.txt";
 const size_t MAX_NAMES_COUNT = 1004;
 
 struct Mark {

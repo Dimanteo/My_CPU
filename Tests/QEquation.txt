@@ -1,0 +1,155 @@
+push 1; A
+push -8; B
+push 15; C
+call q_equation; x^2-8x+15. Set dx = -1 and print -1 -1 if infinite number of roots, otherwise dx = number of roots.  <3, 5, 2>
+push dx
+out
+
+push 0;
+push 0;
+push 0;
+call q_equation; <-1, -1, -1> infinite root
+push dx
+out
+
+push 1
+push -4
+push 4
+call q_equation; <2, 1>
+push dx
+out
+
+push 0
+push 3
+push 9
+call q_equation; <-3, 1>
+push dx
+out
+
+push 1
+push 5
+push 8
+call q_equation; <0>
+push dx
+out
+
+push 5
+push 23
+push 12
+call q_equation; <-0.6, -4, 2>
+push dx
+out
+
+end
+
+q_equation:
+pop dx
+pop cx
+pop bx
+pop ax
+push dx
+push ax
+push 0
+jne discriminant
+push bx
+push 0
+jne b_not_zero
+push cx
+push 0
+jne c_not_zero
+push -1; A = 0, B = 0, C = 0
+pop dx
+push -1
+push -1
+out
+out
+ret
+
+b_not_zero:
+push -1
+push cx
+mul
+push bx
+div
+push 1
+pop dx
+out
+ret
+
+c_not_zero:
+push -1
+pop dx
+push -1
+push -1
+out
+out
+ret
+
+discriminant:
+push 4
+push ax
+mul
+push cx
+mul
+push bx
+push bx
+mul
+sub
+pop dx
+
+push dx
+push 0
+ja d_lower0
+
+push dx
+push 0
+jb d_greater0
+
+push dx
+push 0
+je d_equal0
+
+d_lower0:
+push 0
+pop dx
+ret
+
+d_equal0:
+push 1
+pop dx
+push bx
+push -1
+mul
+push ax
+div
+push 2
+div
+out
+ret
+
+d_greater0:
+push dx
+sqr
+push bx
+push -1
+mul
+sub
+push ax
+div
+push 2
+div
+out
+push dx
+sqr
+push bx
+push -1
+mul
+add
+push ax
+div
+push 2
+div
+out
+push 2
+pop dx
+ret

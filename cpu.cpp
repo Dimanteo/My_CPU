@@ -69,7 +69,7 @@ int main() {
     pc++;
 
     while (*pc != 0) {
-        cpu_verify(&cpu, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+        //cpu_verify(&cpu, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
         switch (*pc) {
 #define DEF_CMD(name, token, scanf_sample, code, n_arg, instructions, disasm) \

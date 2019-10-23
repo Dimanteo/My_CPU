@@ -1,0 +1,28 @@
+push 5; число факториал которого вычисляется
+push 1
+pop dx
+call factorial
+push dx
+out
+end
+factorial:
+pop ax
+pop bx
+push ax
+push bx
+push bx
+push -1
+add
+pop cx
+push cx
+push 1
+je exit
+push cx
+call factorial
+push dx
+mul
+pop dx
+ret
+exit:
+pop dx
+ret
