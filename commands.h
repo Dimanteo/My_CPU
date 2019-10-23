@@ -24,7 +24,15 @@
     DEF_CMD(COS, cos, /*scanf_sample*/, 9, 0, cPUSH((int)(cos((double)cPOP / PRECISION) * PRECISION)), /*disasm_print*/)
     DEF_CMD(OUT, out, /*scanf_sample*/, 10, 0, cPRINT(cPOP), /*disasm_print*/) //print value from stack to screen
     DEF_CMD(PUSHX, push, SCANsample( regTOKENS , sarg), 11, 1, cPUSH(cREG(arg_v[0])), getARG_REG) //Push from register
-    DEF_CMD(JUMP, jmp, SCANsample(" %s", sarg), 12, 1, pc = bin + arg_v[0]; break; , " %g"$ (double)*(int*)(pc + 1))
+    DEF_CMD(JUMP, jmp, SCANsample(" %s", sarg), 12, 1, pc = bin + arg_v[0]; break; , " %d"$ *(int*)(pc + 1))
+    DEF_CMD(JUMPA, ja, SCANsample(" %s", sarg), 13, 1, if(cPOP > cPOP) {pc = bin + arg_v[0]; break;} , " %d"$ *(int*)(pc + 1))
+    DEF_CMD(JUMPAE, jae, SCANsample(" %s", sarg), 14, 1, if(cPOP >= cPOP) {pc = bin + arg_v[0]; break;} , " %d"$ *(int*)(pc + 1))
+    DEF_CMD(JUMPB, jb, SCANsample(" %s", sarg), 15, 1, if(cPOP < cPOP) {pc = bin + arg_v[0]; break;} , " %d"$ *(int*)(pc + 1))
+    DEF_CMD(JUMPBE, jbe, SCANsample(" %s", sarg), 16, 1, if(cPOP <= cPOP) {pc = bin + arg_v[0]; break;} , " %d"$ *(int*)(pc + 1))
+    DEF_CMD(JUMPE, je, SCANsample(" %s", sarg), 17, 1, if(cPOP == cPOP) {pc = bin + arg_v[0]; break;} , " %d"$ *(int*)(pc + 1))
+    DEF_CMD(JUMPNE, jne, SCANsample(" %s", sarg), 18, 1, if(cPOP != cPOP) {pc = bin + arg_v[0]; break;} , " %d"$ *(int*)(pc + 1))
+    //Это понты тем, насколько все легко расширять. Переопределенный PUSH который выводит на экран произведение суммы двух регистров на число.
+    DEF_CMD(ADAPTIVITY_TEST, push, SCANsample(" %lf %s %s", darg $ sarg $ sarg), 42, 3, cPRINT((double)arg_v[0] * (cREG(arg_v[1]) + cREG(arg_v[2])) / PRECISION), getARG)
 
 #undef $
 #undef getARG

@@ -48,7 +48,7 @@ int main()
     for (int compilation_pass = 1; compilation_pass <= 2; ++compilation_pass)
     {
 
-        fprintf(listing, "Iteration %d:\n", compilation_pass);
+        fprintf(listing, "\nIteration %d:\n", compilation_pass);
         char* bin_ptr = bin;
         *(int*)bin_ptr = SIGNATURE;
         bin_ptr += sizeof(SIGNATURE);
@@ -159,7 +159,6 @@ int translate_str(char* str, int size, Mark names[], int* index /*= nullptr*/)
 {
     for (int i = 0; i < size; ++i)
     {
-        printf("%s %s\n", str, names[i].name);
         if (strcmp(str, names[i].name) == 0)
         {
             if (index != nullptr)
