@@ -1,30 +1,34 @@
+#define PRECISION 1000 //const
 
 //DSL
 #define cPOP stack_pop(&cpu.stack)
 #define cPUSH(x) stack_push(&cpu.stack, x)
 #define cREG(x) cpu.reg[x]
-#define cPRINT(x) fprintf(cpu_out, "%g\n", x)
+#define cPRINT(x) fprintf(cpu_out, "%g\n", (double)x / PRECISION)
 #define SCANsample(format, arguments) && (sscanf(data[pc].begin + symb_passed, format, arguments))
-#define regTOKENS "%*[ ]%[xabcd]"
+#define regTOKENS " %[xabcd]"
+#define getARG " %g"$ (double)*(int*)(pc + 1) / PRECISION
+#define getARG_REG " %s"$ translate_code(*(int*)(pc + 1))
+#define $ , //need to avoid problems with comas in functions with 2 or more arguments
 
-#define $ , //need to avoid problems with comas in scanf with 2 or more arguments
-
-/* DEF_CMD(CMD_name, token, scanf_sample,  code, number_of_args, instructions)*/
-    DEF_CMD(END, end, /*scanf_sample*/, 0, 0, /*instructios*/)
-    DEF_CMD(PUSH, push, SCANsample("%lf", darg), 1, 1, cPUSH((double)arg_v[0] / 1000)) //push to stack
-    DEF_CMD(POP, pop, SCANsample( regTOKENS , sarg), 2, 1, cREG(arg_v[0]) = cPOP)
-    DEF_CMD(ADD, add, /*scanf_sample*/, 3, 0, cPUSH(cPOP + cPOP))
-    DEF_CMD(SUB, sub, /*scanf_sample*/, 4, 0, cPUSH(-cPOP + cPOP))
-    DEF_CMD(MUL, mul, /*scanf_sample*/, 5, 0, cPUSH(cPOP * cPOP))
-    DEF_CMD(DIV, div, /*scanf_sample*/, 6, 0, cPUSH(1 / cPOP * cPOP))
-    DEF_CMD(SQR, sqr, /*scanf_sample*/, 7, 0, cPUSH(sqrt(cPOP)))
-    DEF_CMD(SIN, sin, /*scanf_sample*/, 8, 0, cPUSH(sin(cPOP)))
-    DEF_CMD(COS, cos, /*scanf_sample*/, 9, 0, cPUSH(cos(cPOP)))
-    DEF_CMD(OUT, out, /*scanf_sample*/, 10, 0, cPRINT(cPOP)) //print value from stack to screen
-    DEF_CMD(PUSHX, push, SCANsample( regTOKENS , sarg), 11, 1, cPUSH(cREG(arg_v[0]))) //Push to register
+/* DEF_CMD(CMD_name, token, scanf_sample,  code, number_of_args, instructions, disasm_print)*/
+    DEF_CMD(END, end, /*scanf_sample*/, 0, 0, /*instructios*/, /*disasm_print*/)
+    DEF_CMD(PUSH, push, SCANsample( " %lf" , darg), 1, 1, cPUSH(arg_v[0]), getARG) //push to stack
+    DEF_CMD(POP, pop, SCANsample( regTOKENS , sarg), 2, 1, cREG(arg_v[0]) = cPOP, getARG_REG) //put in register
+    DEF_CMD(ADD, add, /*scanf_sample*/, 3, 0, cPUSH(cPOP + cPOP), /*disasm_print*/)
+    DEF_CMD(SUB, sub, /*scanf_sample*/, 4, 0, cPUSH(-cPOP + cPOP), /*disasm_print*/)
+    DEF_CMD(MUL, mul, /*scanf_sample*/, 5, 0, cPUSH(cPOP * cPOP / PRECISION), /*disasm_print*/)
+    DEF_CMD(DIV, div, /*scanf_sample*/, 6, 0, cPUSH((int)(1 / (double) cPOP * cPOP * PRECISION)), /*disasm_print*/)
+    DEF_CMD(SQR, sqr, /*scanf_sample*/, 7, 0, cPUSH((int)(sqrt((double)cPOP / PRECISION) * PRECISION)), /*disasm_print*/)
+    DEF_CMD(SIN, sin, /*scanf_sample*/, 8, 0, cPUSH((int)(sin((double)cPOP / PRECISION) * PRECISION)), /*disasm_print*/)
+    DEF_CMD(COS, cos, /*scanf_sample*/, 9, 0, cPUSH((int)(cos((double)cPOP / PRECISION) * PRECISION)), /*disasm_print*/)
+    DEF_CMD(OUT, out, /*scanf_sample*/, 10, 0, cPRINT(cPOP), /*disasm_print*/) //print value from stack to screen
+    DEF_CMD(PUSHX, push, SCANsample( regTOKENS , sarg), 11, 1, cPUSH(cREG(arg_v[0])), getARG_REG) //Push from register
+    DEF_CMD(JUMP, jmp, SCANsample(" %s", sarg), 12, 1, pc = bin + arg_v[0]; break; , " %g"$ (double)*(int*)(pc + 1))
 
 #undef $
-
+#undef getARG
+#undef getARG_REG
 #undef regTOKENS
 #undef cPOP
 #undef cPUSH

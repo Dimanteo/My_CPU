@@ -5,3 +5,4 @@ set(CMAKE_CXX_STANDARD 14)
 
 add_executable(Processor_Laba_asm asm.cpp)
 add_executable(Processor_Laba_cpu cpu.cpp)
+add_executable(Processor_Laba_disasm DisAsm.cpp)

@@ -7,6 +7,7 @@
 #include "My_Headers/txt_files.h"
 #include "linker.h"
 
+typedef int element_t;
 const char CPU_LOG_NAME[] = "../log.txt";
 const char STACK_LOG_NAME[] = "../Stack_Log.txt";
 
@@ -14,7 +15,7 @@ struct CPU {
     const char tag[MAX_NAME_LENGTH];
     canary_t cpu_canary1;
     Stack_t stack;
-    double reg[4];
+    element_t reg[4];
     canary_t cpu_canary2;
 };
 
@@ -39,7 +40,7 @@ int main() {
     FILE* log = fopen(CPU_LOG_NAME, "wb");
     assert(log);
     fclose(log);
-    stack_reopen_log(&cpu.stack, STACK_LOG_NAME);
+    stack_reopen_log(&cpu.stack, STACK_LOG_NAME, "wb");
 
     int signature = *(int*)pc;
     if (signature != SIGNATURE) {
@@ -68,8 +69,10 @@ int main() {
     pc++;
 
     while (*pc != 0) {
+        cpu_verify(&cpu, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+
         switch (*pc) {
-#define DEF_CMD(name, token, scanf_sample, code, n_arg, instructions) \
+#define DEF_CMD(name, token, scanf_sample, code, n_arg, instructions, disasm) \
             case code:\
             {\
                 int arg_v[n_arg] = {};\
@@ -82,6 +85,14 @@ int main() {
             }
 #include "commands.h"
 #undef DEF_CMD
+
+            default:
+                fprintf(log, "\nRuntime ERROR. Unknown command code.\npc = %d [%p]\ncode = %d", pc - bin, pc, *pc);
+                fprintf(stderr, "\nRuntime ERROR. Unknown command code.\npc = %d [%p]\ncode = %d", pc - bin, pc, *pc);
+                fclose(cpu_out);
+                cpu_destruct(&cpu);
+                free(bin);
+                abort();
         }
         cpu_verify(&cpu, __FILE__, __PRETTY_FUNCTION__, __LINE__);
     }
@@ -102,7 +113,6 @@ bool cpu_verify (CPU* cpu, const char filename[], const char function[], int lin
         cpu_dump(cpu, "cpu_canary2 has changed", ERR_STATE, filename, function, line);
         return false;
     }
-
     if(!stack_OK(&cpu->stack, filename, function, line)) {
         cpu_dump(cpu, "cpu.stack error", ERR_STATE, filename, function, line);
         return false;
@@ -169,7 +179,7 @@ void cpu_dump(CPU *cpu, const char reason[], const char state[], const char file
     fclose(log);
 
     stack_reopen_log(&cpu->stack, CPU_LOG_NAME);
-    stack_dump(&cpu->stack, "call by CPU_dump", strcmp(state, OK_STATE) ? PARENT_OK : PARENT_ERR, filename, func, line);
+    stack_dump(&cpu->stack, "call by CPU_dump", (strcmp(state, OK_STATE) == 0) ? PARENT_OK : PARENT_ERR, filename, func, line);
     stack_reopen_log(&cpu->stack, STACK_LOG_NAME);
 
     log = fopen(CPU_LOG_NAME, "ab");

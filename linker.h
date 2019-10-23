@@ -1,8 +1,8 @@
 
-const char VERSION = 4;
+const char VERSION = 5;
 const unsigned int SIGNATURE =  'kauq';
 const int MAX_CMD_LEN = 10;
-const int MAX_REG_LEN = 2;
+const size_t MAX_NAME_LEN = 20;
 const int MAX_NUM_ARGS = 1;
 const char BIN_FILE_NAME[] = "../bin.dak";
 
@@ -12,7 +12,7 @@ enum REG_CODE {
     CX = 2,
     DX = 3
 };
-#define DEF_CMD(name, token, scanf_samples, code, n_args, instructions) CMD_##name = code,
+#define DEF_CMD(name, token, scanf_samples, code, n_args, instructions, disasm) CMD_##name = code,
     enum CMD_CODE{
         #include "commands.h"
     };
