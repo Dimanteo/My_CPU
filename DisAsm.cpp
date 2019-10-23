@@ -26,7 +26,7 @@ int main() {
     int version = *pc++;
     fprintf(fout, ";Signature: %X\n;Version: %d\n", signature, version);
 
-    while (*pc) {
+    while (pc - bin != bin_size) {
         switch (*pc) {
 
 #define DEF_CMD(name, token, scanf_sample, code, n_args, instructions, disasm) \
@@ -45,7 +45,6 @@ int main() {
                 abort();
         }
     }
-    fprintf(fout, "end");
 
     fclose(fout);
     free(bin);
