@@ -69,7 +69,7 @@ int main() {
     pc++;
 
     while (*pc != 0) {
-        //cpu_verify(&cpu, __FILE__, __PRETTY_FUNCTION__, __LINE__);
+        cpu_verify(&cpu, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
         switch (*pc) {
 #define DEF_CMD(name, token, scanf_sample, code, n_arg, instructions, disasm) \
@@ -87,7 +87,7 @@ int main() {
 #undef DEF_CMD
 
             default:
-                fprintf(log, "\nRuntime ERROR. Unknown command code.\npc = %d [%p]\ncode = %d", pc - bin, pc, *pc);
+                fprintf(log,    "\nRuntime ERROR. Unknown command code.\npc = %d [%p]\ncode = %d", pc - bin, pc, *pc);
                 fprintf(stderr, "\nRuntime ERROR. Unknown command code.\npc = %d [%p]\ncode = %d", pc - bin, pc, *pc);
                 fclose(cpu_out);
                 cpu_destruct(&cpu);
@@ -129,23 +129,31 @@ bool cpu_verify (CPU* cpu, const char filename[], const char function[], int lin
 void cpu_init(CPU* cpu) {
     cpu->cpu_canary1 = CANARY_VALUE;
     cpu->stack = (Stack_t){"CPU_stack"};
+
     stack_init(&cpu->stack);//default stack size = 10
+
     cpu->reg[AX] = POISON;
     cpu->reg[BX] = POISON;
     cpu->reg[CX] = POISON;
     cpu->reg[DX] = POISON;
+
     cpu->cpu_canary2 = CANARY_VALUE;
+
     cpu_verify(cpu, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 }
 
 void cpu_destruct(CPU *cpu) {
     cpu_verify(cpu,  __FILE__, __PRETTY_FUNCTION__, __LINE__);
+
     cpu->cpu_canary1 = 0;
+
     stack_destruct(&cpu->stack);
+
     cpu->reg[AX] = 0;
     cpu->reg[BX] = 0;
     cpu->reg[CX] = 0;
     cpu->reg[DX] = 0;
+
     cpu->cpu_canary2 = 0;
 }
 

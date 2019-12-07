@@ -3,15 +3,31 @@
 #include "My_Headers/txt_files.h"
 #include "linker.h"
 
-const char INPUT_FILENAME[] = "../Tests/QEquation.txt";
+const char INPUT_FILENAME[] = "../Tests/Factorial.txt";
 const size_t MAX_NAMES_COUNT = 1004;
 
 struct Mark {
     int code = -2;
-    char name[MAX_NAME_LEN] = {};
+    char name[MAX_NAME_LEN] = "";
 };
 
 int translate_str(char* str, int size, Mark names[], int* index = nullptr);
+
+/**
+ * Find comment in str.
+ * @param str String.
+ */
+void preprocess_comment(char* str);
+
+/**
+ * Find and process mark.
+ * @param adress Current adress, where mark will be pointing.
+ * @param str String to process.
+ * @param names Array of marks.
+ * @param names_number Number of elements in names.
+ * @return 1 if str is mark, 0 if str NOT mark
+ */
+int preprocess_mark(int adress, char* str, Mark names[], int* names_number, int compilation_pass);
 
 int main()
 {
@@ -57,41 +73,15 @@ int main()
 
         for (int pc = 0; pc < number_lines; ++pc)
         {
-            char *comment = strchr(data[pc].begin, ';');
-            if (comment != nullptr)
+            preprocess_comment(data[pc].begin);
+            if(preprocess_mark(bin_ptr - bin, data[pc].begin, names, &names_number, compilation_pass))
             {
-                *comment = '\0';
-            }
-
-            char *mark_end = strchr(data[pc].begin, ':');
-            if (mark_end != nullptr)
-            {
-                if (compilation_pass == 1)
-                {
-                    *mark_end = '\0';
-                    size_t mark_len = mark_end - data[pc].begin;
-                    char* name = (char *) calloc(mark_len + 1, sizeof(char));//+1 for \0
-                    sscanf(data[pc].begin, "%s", name);
-                    int index = -1;
-                    if (translate_str(name, names_number, names, &index) == -1)
-                    {
-                        if (index != -1)
-                        {
-                            names[index].code = bin_ptr - bin;
-                        } else {
-                            sscanf(data[pc].begin, "%s", names[names_number].name);
-                            names[names_number++].code = bin_ptr - bin;
-                        }
-                    }
-                    *mark_end = ':';
-                    free(name);
-                }
                 continue;
             }
-            char cmd[MAX_CMD_LEN] = {};
+            char cmd[MAX_CMD_LEN] = "";
             int symb_passed = 0;
-            sscanf(data[pc].begin, "%s%n", cmd, &symb_passed);
-            char sarg[MAX_NAME_LEN + 1] = {};//+1 for \0
+            sscanf(data[pc].begin, " %s%n", cmd, &symb_passed);
+            char sarg[MAX_NAME_LEN + 1] = "";//+1 for \0
             double tmp_crutch = 0;
             double *darg = &tmp_crutch;
 #define DEF_CMD(name, token, scanf_sample, code, n_args, instructions, disasm) \
@@ -101,7 +91,7 @@ int main()
                 fprintf(listing, "%d[%X]", code, code);\
                 bin_ptr++;\
                 if(compilation_pass == 1) size_bin += sizeof(char) + n_args * sizeof(int);\
-                for(int j = 0; j < n_args; j++) \
+                for(int i = 0; i < n_args; i++) \
                 {\
                     double farg = 0;\
                     char str[MAX_NAME_LEN + 1] = {};\
@@ -146,9 +136,10 @@ int main()
     //Записываем массив в файл
     FILE* fbin = fopen(BIN_FILE_NAME, "wb");
     fwrite(bin, sizeof(char), size_bin, fbin);
+    fclose(fbin);
 
     fclose(listing);
-    fclose(fbin);
+
     free(bin);
     free(data);
     free(buffer);
@@ -173,6 +164,45 @@ int translate_str(char* str, int size, Mark names[], int* index /*= nullptr*/)
         *index = -1;
     }
     return -1;
+}
+
+void preprocess_comment(char* str)
+{
+    char *comment = strchr(str, ';');
+    if (comment != nullptr)
+    {
+        *comment = '\0';
+    }
+}
+
+int preprocess_mark(int adress, char* str, Mark names[], int* names_number, int compilation_pass)
+{
+    char *mark_end = strchr(str, ':');
+    if (mark_end != nullptr)
+    {
+        if (compilation_pass == 1)
+        {
+            *mark_end = '\0';
+            size_t mark_len = mark_end - str;
+            char *name = (char *) calloc(mark_len + 1, sizeof(char));//+1 for \0
+            sscanf(str, " %s", name);
+            int index = -1;
+            if (translate_str(name, *names_number, names, &index) == -1)
+            {
+                if (index != -1) {
+                    names[index].code = adress;
+                } else {
+                    sscanf(str, " %s", names[*names_number].name);
+                    names[*names_number].code = adress;
+                    *names_number += 1;
+                }
+            }
+            free(name);
+            *mark_end = ':';
+        }
+        return 1;
+    }
+    return 0;
 }
 
 

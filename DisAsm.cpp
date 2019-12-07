@@ -40,7 +40,7 @@ int main() {
 
 #undef DEF_CMD
             default:
-                fprintf(fout, "ERROR. Unknown command. Translation stopped.");
+                fprintf(fout,   "ERROR. Unknown command. Translation stopped.");
                 fprintf(stderr, "ERROR. Unknown command. Translation stopped.");
                 abort();
         }

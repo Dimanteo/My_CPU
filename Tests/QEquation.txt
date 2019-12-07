@@ -5,6 +5,13 @@ call q_equation; x^2-8x+15. Set dx = -1 and print -1 -1 if infinite number of ro
 push dx
 out
 
+push 1; A
+push 0; B
+push -4; C
+call q_equation; <-2, 2, 2>
+push dx
+out
+
 push 0;
 push 0;
 push 0;

@@ -30,8 +30,8 @@ bool assertion_failed(const char condition[], const char file[], const char fun[
 #endif
 #endif
 
-typedef double element_t;
-#define ELEMENT_PRINT "%g"
+typedef int element_t;
+#define ELEMENT_PRINT "%d"
 typedef unsigned int canary_t;
 #define CANARY_PRINT "%#X"
 
