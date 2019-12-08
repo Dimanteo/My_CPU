@@ -2,7 +2,7 @@
 #include <cmath>
 
 #define NO_HASH
-#define OK_DUMP
+//#define OK_DUMP
 #include "My_Headers/protected_stack.h"
 #include "My_Headers/txt_files.h"
 #include "linker.h"
@@ -10,12 +10,14 @@
 typedef int element_t;
 const char CPU_LOG_NAME[] = "../log.txt";
 const char STACK_LOG_NAME[] = "../Stack_Log.txt";
+const int RAM_SIZE = 100000;
 
 struct CPU {
     const char tag[MAX_NAME_LENGTH];
     canary_t cpu_canary1;
     Stack_t stack;
     element_t reg[4];
+    int RAM[RAM_SIZE];
     canary_t cpu_canary2;
 };
 
@@ -72,8 +74,8 @@ int main() {
         cpu_verify(&cpu, __FILE__, __PRETTY_FUNCTION__, __LINE__);
 
         switch (*pc) {
-#define DEF_CMD(name, token, scanf_sample, code, n_arg, instructions, disasm) \
-            case code:\
+#define DEF_CMD(name, token, scanf_sample, n_arg, instructions, disasm) \
+            case CMD_##name:\
             {\
                 int arg_v[n_arg] = {};\
                 for(int i = 0; i < n_arg; i++) {\
@@ -192,7 +194,11 @@ void cpu_dump(CPU *cpu, const char reason[], const char state[], const char file
 
     log = fopen(CPU_LOG_NAME, "ab");
     assert(log);
-    fprintf(log, "} end of CPU Dump(%s)\n", cpu->tag);
+    fprintf(log, "RAM {\n");
+    for (int i = 0; i < RAM_SIZE; ++i) {
+        fprintf(log, "\t[%d]: %d\n", i, cpu->RAM[i]);
+    }
+    fprintf(log, "}\n} end of CPU Dump(%s)\n", cpu->tag);
 
     fclose(log);
 }

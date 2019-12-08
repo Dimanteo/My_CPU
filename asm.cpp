@@ -2,8 +2,9 @@
 #include <cmath>
 #include "My_Headers/txt_files.h"
 #include "linker.h"
+#include "Parser.h"
 
-const char INPUT_FILENAME[] = "../Tests/Factorial.txt";
+const char INPUT_FILENAME[] = "../Tests/QEquation.txt";
 const size_t MAX_NAMES_COUNT = 1004;
 
 struct Mark {
@@ -28,6 +29,8 @@ void preprocess_comment(char* str);
  * @return 1 if str is mark, 0 if str NOT mark
  */
 int preprocess_mark(int adress, char* str, Mark names[], int* names_number, int compilation_pass);
+
+size_t process_RAM(const char token[], char *str, char **bin_ptr, FILE *listing);
 
 int main()
 {
@@ -84,11 +87,20 @@ int main()
             char sarg[MAX_NAME_LEN + 1] = "";//+1 for \0
             double tmp_crutch = 0;
             double *darg = &tmp_crutch;
-#define DEF_CMD(name, token, scanf_sample, code, n_args, instructions, disasm) \
+#define DEF_CMD(name, token, scanf_sample, n_args, instructions, disasm) \
             if((strcmp(#token, cmd) == 0) /*&&*/ scanf_sample)\
             {\
-                *bin_ptr = (char)code;\
-                fprintf(listing, "%d[%X]", code, code);\
+                if (char* ram_sep = strchr(data[pc].begin, '[') )\
+                {\
+                    if (compilation_pass == 1)\
+                        size_bin += process_RAM(#token, ram_sep, &bin_ptr, listing);\
+                    else\
+                        process_RAM(#token, ram_sep, &bin_ptr, listing);\
+                    fprintf(listing, "\n");\
+                    continue;\
+                }\
+                *bin_ptr = (char)CMD_##name;\
+                fprintf(listing, "%d[%X]", *bin_ptr, *bin_ptr);\
                 bin_ptr++;\
                 if(compilation_pass == 1) size_bin += sizeof(char) + n_args * sizeof(int);\
                 for(int i = 0; i < n_args; i++) \
@@ -203,6 +215,49 @@ int preprocess_mark(int adress, char* str, Mark names[], int* names_number, int 
         return 1;
     }
     return 0;
+}
+
+size_t process_RAM(const char token[], char *str, char **bin_ptr, FILE *listing) {
+    Parser parser;
+    parser.str = str;
+    parser.getG();
+    if (parser.arg_num == 1)
+    {
+        if (parser.arg_type[0] == 'n')
+        {
+            if (strcmp(token, "push") == 0)
+                **bin_ptr = (char)CMD_PUSHRAM;
+            else
+                **bin_ptr = (char)CMD_POPRAM;
+        } else {
+            if (strcmp(token, "push") == 0)
+                **bin_ptr = (char)CMD_PUSHRAM_X;
+            else
+                **bin_ptr = (char)CMD_POPRAM_X;
+        }
+    } else if (parser.arg_num == 2) {
+        if (parser.arg_type[0] == 'n')
+        {
+            if (strcmp(token, "push") == 0)
+                **bin_ptr = (char)CMD_PUSHRAM_NX;
+            else
+                **bin_ptr = (char)CMD_POPRAM_NX;
+        } else {
+            if (strcmp(token, "push") == 0)
+                **bin_ptr = (char)CMD_PUSHRAM_XN;
+            else
+                **bin_ptr = (char)CMD_POPRAM_XN;
+        }
+    }
+    fprintf(listing, "%d[%X]", **bin_ptr, **bin_ptr);
+    (*bin_ptr)++;
+    for (int i = 0; i  < parser.arg_num; i++)
+    {
+        *((int*)(*bin_ptr)) = parser.arg_v[i];
+        fprintf(listing, " %d[%.8X]", *((int*)(*bin_ptr)), *((int*)(*bin_ptr)));
+        *bin_ptr += sizeof(int);
+    }
+    return sizeof(char) + sizeof(int) * parser.arg_num;
 }
 
 

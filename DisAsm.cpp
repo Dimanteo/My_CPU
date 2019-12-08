@@ -29,8 +29,8 @@ int main() {
     while (pc - bin != bin_size) {
         switch (*pc) {
 
-#define DEF_CMD(name, token, scanf_sample, code, n_args, instructions, disasm) \
-            case code:\
+#define DEF_CMD(name, token, scanf_sample, n_args, instructions, disasm) \
+            case CMD_##name:\
                 fprintf(fout, #token disasm);\
                 fprintf(fout, "\n");\
                 pc += 1 + sizeof(int) * n_args;\
