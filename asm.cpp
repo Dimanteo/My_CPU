@@ -32,11 +32,18 @@ int preprocess_mark(int adress, char* str, Mark names[], int* names_number, int 
 
 size_t process_RAM(const char token[], char *str, char **bin_ptr, FILE *listing);
 
-int main()
+int main(int argc, char* argv[])
 {
+    const char* input_filename = nullptr;
+    if (argc > 1)
+    {
+        input_filename = argv[1];
+    } else {
+        input_filename = INPUT_FILENAME;
+    }
     //Парсим на строки
     size_t buf_size = 0, number_lines = 0;
-    char* buffer = read_file_to_buffer_alloc(INPUT_FILENAME, "r", &buf_size);
+    char* buffer = read_file_to_buffer_alloc(input_filename, "r", &buf_size);
     assert(buffer);
     String* data = parse_buffer_strings_alloc(buffer, &number_lines);
     assert(data);
@@ -46,7 +53,7 @@ int main()
     assert(listing);
     time_t now = time(nullptr);
     fprintf(listing, "Compilation log: %s\nSIGNATURE: %X\nVERSION: %X\n", ctime(&now), SIGNATURE, VERSION);
-    fprintf(listing, "Translation from file: %s\n", INPUT_FILENAME);
+    fprintf(listing, "Translation from file: %s\n", input_filename);
 
     //Создаем массив для записи
     char* bin = (char*)calloc(number_lines * (sizeof(char) + MAX_NUM_ARGS * sizeof(int)), sizeof(char) + sizeof(SIGNATURE) +
