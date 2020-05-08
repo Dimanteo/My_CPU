@@ -23,6 +23,7 @@
     DEF_CMD(SIN, sin, /*scanf_sample*/, 0, cPUSH((int)(sin((double)cPOP / PRECISION) * PRECISION)), /*disasm_print*/)
     DEF_CMD(COS, cos, /*scanf_sample*/, 0, cPUSH((int)(cos((double)cPOP / PRECISION) * PRECISION)), /*disasm_print*/)
     DEF_CMD(OUT, out, /*scanf_sample*/, 0, cPRINT(cPOP), /*disasm_print*/) //print value from stack to screen
+    DEF_CMD(IN,  in,  /*scanf_sample*/, 0, float val=0; scanf("%f"$ &val); cPUSH((int)trunc(val*PRECISION)), /*disasm_print*/)
     DEF_CMD(PUSHX, push, SCANsample( regTOKENS , sarg), 1, cPUSH(cREG(arg_v[0])), getARG_REG) //Push from register
     DEF_CMD(JUMP, jmp, SCANsample(" %s", sarg), 1, pc = bin + arg_v[0]; break; , " %d"$ *(int*)(pc + 1))
     DEF_CMD(JUMPA, ja, SCANsample(" %s", sarg), 1, if(cPOP > cPOP) {pc = bin + arg_v[0]; break;} , " %d"$ *(int*)(pc + 1))

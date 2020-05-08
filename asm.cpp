@@ -16,8 +16,9 @@ int translate_str(char* str, int size, Mark names[], int* index = nullptr);
 /**
  * Find comment in str.
  * @param str String.
+ * @return True if line is comment. Otherwise False.
  */
-void preprocess_comment(char* str);
+bool preprocess_comment(char* str);
 
 /**
  * Find and process mark.
@@ -75,7 +76,10 @@ int main()
 
         for (int pc = 0; pc < number_lines; ++pc)
         {
-            preprocess_comment(data[pc].begin);
+            if (preprocess_comment(data[pc].begin))
+            {
+                continue;
+            }
             if(preprocess_mark(bin_ptr - bin, data[pc].begin, names, &names_number, compilation_pass))
             {
                 continue;
@@ -177,13 +181,22 @@ int translate_str(char* str, int size, Mark names[], int* index /*= nullptr*/)
     return -1;
 }
 
-void preprocess_comment(char* str)
+bool preprocess_comment(char* str)
 {
     char *comment = strchr(str, ';');
     if (comment != nullptr)
     {
         *comment = '\0';
     }
+    bool isblank = true;
+    for (;*str; str++)
+    {
+        if (!isspace(*str))
+        {
+            isblank = false;
+        }
+    }
+    return isblank;
 }
 
 int preprocess_mark(int adress, char* str, Mark names[], int* names_number, int compilation_pass)
