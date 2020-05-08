@@ -44,7 +44,6 @@ const char ERR_STATE[] = "ERROR";
 const char OK_STATE[] = "ok";
 const char PARENT_ERR[] = "Called by parent. ERROR";
 const char PARENT_OK[] = "Called by parent. ok";
-const char DEFAULT_STACK_LOG_NAME[] = "stack_log.txt";
 const canary_t CANARY_VALUE = 0xBEDA;
 
 
@@ -494,7 +493,9 @@ void stack_destruct(Stack_t* stack) {
 }
 
 FILE* stack_reopen_log(Stack_t *stack, const char *name /*= DEFAULT_STACK_LOG_NAME*/, const char *mode /*= "ab"*/) {
-    fclose(stack->log);
+    if (stack->log != nullptr) {
+        fclose(stack->log);
+    }
     stack->log = fopen(name, mode);
     assert(stack->log);
     return stack->log;

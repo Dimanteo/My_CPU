@@ -5,7 +5,21 @@ const unsigned int SIGNATURE =  'kauq';
 const int MAX_CMD_LEN = 10;
 const size_t MAX_NAME_LEN = 20;
 const int MAX_NUM_ARGS = 3;
-const char BIN_FILE_NAME[] = "../bin.dak";
+
+//config file paths
+
+//common
+const char BIN_FILE_NAME[] = "bin.dak";                     // asm compilation result
+//asm
+const char INPUT_FILENAME[] = "Tests/Factorial.txt";        // asm input file
+const char LISTING_FILE[]   = "Output/compile.lst";                // Compilation listing
+//disasm
+const char DISASM_OUTPUT_FILENAME[] = "Output/disasm.out";         // DisAsm output file
+//cpu
+const char CPU_LOG_NAME[]           = "Debug/CPU.log";      // File with CPU debug info
+const char CPU_OUT_FILE[]           = "Output/CPU.out";            // CPU output file
+const char STACK_LOG_NAME[]         = "Debug/Stack.log";    // CPU Stack debug info file
+const char DEFAULT_STACK_LOG_NAME[] = "Stack.log";          // Predefined stack debug info file
 
 enum REG_CODE {
     AX = 0,

@@ -4,7 +4,6 @@
 #include "linker.h"
 #include "Parser.h"
 
-const char INPUT_FILENAME[] = "../Tests/QEquation.txt";
 const size_t MAX_NAMES_COUNT = 1004;
 
 struct Mark {
@@ -42,7 +41,7 @@ int main()
     assert(data);
 
     //Открываем файл для листинга
-    FILE* listing = fopen("../compile.lst", "w");
+    FILE* listing = fopen(LISTING_FILE, "w");
     assert(listing);
     time_t now = time(nullptr);
     fprintf(listing, "Compilation log: %s\nSIGNATURE: %X\nVERSION: %X\n", ctime(&now), SIGNATURE, VERSION);

@@ -3,14 +3,11 @@
 #include "linker.h"
 #include "My_Headers/txt_files.h"
 
-const char BIN_INPUT_FILENAME[] = "../bin.dak";
-const char DISASM_OUTPUT_FILENAME[] = "../disAsmOutput.txt";
-
 char* translate_code(int code);
 
 int main() {
     size_t bin_size = 0;
-    char* bin = read_file_to_buffer_alloc(BIN_INPUT_FILENAME, "rb", &bin_size);
+    char* bin = read_file_to_buffer_alloc(BIN_FILE_NAME, "rb", &bin_size);
     assert(bin);
     char* pc = bin;
     FILE* fout = fopen(DISASM_OUTPUT_FILENAME, "wb");

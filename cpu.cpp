@@ -3,13 +3,11 @@
 
 #define NO_HASH
 //#define OK_DUMP
+#include "linker.h"
 #include "My_Headers/protected_stack.h"
 #include "My_Headers/txt_files.h"
-#include "linker.h"
 
 typedef int element_t;
-const char CPU_LOG_NAME[] = "../log.txt";
-const char STACK_LOG_NAME[] = "../Stack_Log.txt";
 const int RAM_SIZE = 100000;
 
 struct CPU {
@@ -37,7 +35,7 @@ int main() {
     assert(bin);
     char* pc = bin;
 
-    FILE* cpu_out = fopen("../cpu_out.txt", "wb");
+    FILE* cpu_out = fopen(CPU_OUT_FILE, "wb");
     assert(cpu_out);
     FILE* log = fopen(CPU_LOG_NAME, "wb");
     assert(log);
