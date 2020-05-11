@@ -1,5 +1,7 @@
 #ifndef LINKER_H
 #define LINKER_H
+#include <stdio.h>
+
 const char VERSION = 7;
 const unsigned int SIGNATURE =  'kauq';
 const int MAX_CMD_LEN = 10;
@@ -11,7 +13,7 @@ const int MAX_NUM_ARGS = 3;
 //common
 const char BIN_FILE_NAME[] = "bin.dak";                             // asm compilation result
 //asm
-const char INPUT_FILENAME[] = "Tests/Factorial.txt";                      // asm input file
+const char INPUT_FILENAME[] = "asm_stdin.txt";                      // asm input file
 const char LISTING_FILE[]   = "Output/compile.lst";                 // Compilation listing
 //disasm
 const char DISASM_OUTPUT_FILENAME[] = "Output/disasm.out";          // DisAsm output file
