@@ -56,7 +56,7 @@ char* Command_x86_64::get_body()
 
 void Command_x86_64::make_label(int pc, char* label)
 {
-    sprintf(label, "LBL_%d", pc);
+    sprintf(label, ".LBL_%d", pc);
 }
 
 
@@ -77,16 +77,16 @@ void Command_x86_64::match_reg(int code, char* reg)
     switch (code)
     {
         case AX:
-            reg = "r8";
+            strcpy(reg, "r8");
             break;
         case BX:
-            reg = "r9";
+            strcpy(reg, "r9");
             break;
         case CX:
-            reg = "r10";
+            strcpy(reg, "r10");
             break;
         case DX:
-            reg = "r11";
+            strcpy(reg, "r11");
             break;
         default:
 #ifndef NDEBUG
@@ -124,6 +124,7 @@ int Command_x86_64::translate_single(char* src, int pc)
             GETARGS(1);
             sprintf(LBL
                 "push %d\n",
+                label,
                 (float)args[0] / 1000);
             break;
         }
@@ -132,30 +133,189 @@ int Command_x86_64::translate_single(char* src, int pc)
             GETARGS(1)
             char reg[4] = {0};
             match_reg(args[0], reg);
-            sprintf(LBL,
+            sprintf(LBL
                 "pop %s\n",
+                label,
                 reg);
             break;
         }
         case CMD_ADD:
         {
             nargs = 0;
-            sprintf(LBL,
+            sprintf(LBL
                 "pop rsi\n"
                 "pop rdi\n"
                 "add rdi, rsi\n"
-                "push rdi");
+                "push rdi\n",
+                label);
                 break;
         }
         case CMD_SUB:
         {
             nargs = 0;
-            sprintf(LBL,
+            sprintf(LBL
                 "pop rsi\n"
                 "pop rdi\n"
                 "sub rsi, rdi\n"
-                "push rsi");
+                "push rsi\n",
+                label);
                 break;
+        }
+        case CMD_MUL:
+        {
+            nargs = 0;
+            sprintf(LBL
+                "push 1000\n"
+                "fild qword [rsp+16]\n"
+                "fild qword [rsp+8]\n"
+                "fild qword [rsp]\n"
+                "add rsp, 16\n"
+                "fdiv\n"
+                "fmul\n"
+                "fistp qword [rsp]\n",
+                label);
+                break;
+        }
+        case CMD_DIV:
+        {
+            nargs = 0;
+            sprintf(LBL
+                "push 1000\n"
+                "fild qword [rsp]\n"
+                "fild qword [rsp+8]\n"
+                "fild qword [rsp+16]\n"
+                "add rsp, 16\n"
+                "fdiv\n"
+                "fmul\n"
+                "fistp qword [rsp]\n",
+                label);
+                break;
+        }
+        case CMD_SQR:
+        case CMD_SIN:
+        case CMD_COS:
+        {
+            char instr[6] = {0};
+            if (code == CMD_SQR)
+            {
+                strcpy(instr, "fsqrt");
+            } else if (code == CMD_SIN) {
+                strcpy(instr, "fsin");
+            } else {
+                strcpy(instr, "fcos");
+            }
+            nargs = 0;
+            sprintf(LBL 
+                "push 1000\n"
+                "fild qword [rsp]\n"
+                "fild qword [rsp+8]\n"
+                "fild qword [rsp]\n"
+                "add rsp, 8\n"
+                "fdiv\n"
+                "%s\n"
+                "fmul\n"
+                "fistp qword [rsp]\n",
+                label,
+                instr);
+            break;
+        }
+        case CMD_IN:
+        {
+            nargs = 0;
+            sprintf(LBL
+                "call stdIN\n",
+                label);
+            break;
+        }
+        case CMD_OUT:
+        {
+            nargs = 0;
+            sprintf(LBL 
+                "call stdOUT\n",
+                label);
+            break;
+        }
+        case CMD_PUSHX:
+        {
+            GETARGS(1)
+            char reg[4] = {0};
+            match_reg(args[0], reg);
+            sprintf(LBL
+                "push %s\n",
+                label,
+                reg);
+            break;
+        }
+        case CMD_JUMP:
+        {
+            GETARGS(1)
+            char jmp_dest[CMD_BUFF_SIZE] = {0};
+            make_label(args[0], jmp_dest);
+            sprintf(LBL
+                "jmp %s\n",
+                label,
+                jmp_dest);
+            break;
+        }
+        case CMD_JUMPA:
+        case CMD_JUMPAE:
+        case CMD_JUMPB:
+        case CMD_JUMPBE:
+        case CMD_JUMPE:
+        case CMD_JUMPNE:
+        {
+            char instr[4] = {0};
+            switch(code)
+            {
+                case CMD_JUMPA:
+                    strcpy(instr, "ja");
+                    break;
+                case CMD_JUMPAE:
+                    strcpy(instr, "jae");
+                    break;
+                case CMD_JUMPB:
+                    strcpy(instr, "jb");
+                    break;
+                case CMD_JUMPBE:
+                    strcpy(instr, "jbe");
+                    break;
+                case CMD_JUMPE:
+                    strcpy(instr, "je");
+                    break;
+                case CMD_JUMPNE:
+                    strcpy(instr, "jne");
+                    break;
+            }
+            GETARGS(1)
+            char jmp_dest[CMD_BUFF_SIZE] = {0};
+            make_label(args[0], jmp_dest);
+            sprintf(LBL
+                "pop rdi\n"
+                "pop rsi\n"
+                "cmp rdi, rsi\n"
+                "%s %s\n",
+                label,
+                instr, jmp_dest);
+            break;
+        }
+        case CMD_CALL:
+        {
+            GETARGS(1)
+            char call_dest[CMD_BUFF_SIZE] = {0};
+            make_label(args[0], call_dest);
+            sprintf(LBL
+                "call %s\n",
+                label,
+                call_dest);
+            break;
+        }
+        case CMD_RET:
+        {
+            nargs = 0;
+            sprintf(LBL
+                "ret\n",
+                label);
+            break;
         }
     }
     free(label);
