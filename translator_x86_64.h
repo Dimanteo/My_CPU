@@ -1,4 +1,5 @@
 #include <string.h>
+#include <time.h>
 #include "linker.h"
 #include "My_Headers/txt_files.h"
 
@@ -20,10 +21,14 @@ private:
 
 public:
     Command_x86_64(REGIMES regime);
-    int translate_single(char* src, int pc);
+    int translate_cmd(char* src, int pc);
     char* get_body();
     ~Command_x86_64();
 };
+
+int check_source(char* buffer);
+
+void make_header(char* dst, REGIMES regime);
 
 char* translate(const char* bin_file, REGIMES regime);
 

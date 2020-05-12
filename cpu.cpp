@@ -8,7 +8,6 @@
 #include "My_Headers/txt_files.h"
 
 typedef int element_t;
-const int RAM_SIZE = 100000;
 
 struct CPU {
     const char tag[MAX_NAME_LENGTH];
@@ -64,7 +63,7 @@ int main() {
         fwrite(bin, sizeof(char), size_bin, log);
         fprintf(log, "\n");
         fclose(log);
-        assert(signature == SIGNATURE);
+        assert(version == VERSION);
     }
     pc++;
 

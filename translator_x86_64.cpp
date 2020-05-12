@@ -23,6 +23,7 @@ int main(int argc, char* argv[])
     }
 
     char* result = translate(BIN_FILE_NAME, regime);
+    assert(result);
     
     if (regime == TEXT)
     {
@@ -30,6 +31,7 @@ int main(int argc, char* argv[])
     } else {
         make_elf(out_filename, result);
     }
+    free(result);
     return 0;
 }
 
@@ -56,18 +58,21 @@ char* Command_x86_64::get_body()
 
 void Command_x86_64::make_label(int pc, char* label)
 {
+    assert(label);
     sprintf(label, ".LBL_%d", pc);
 }
 
 
 void Command_x86_64::get_args(char* operand, int* buff, int nargs)
 {
-    operand += 1;
+    assert(operand);
+    assert(buff);
+
+    operand++;
     for (int i = 0; i < nargs; i++)
     {
         buff[i] = ((int*)operand)[i];
     }
-
 }
 
 
@@ -101,8 +106,10 @@ void Command_x86_64::match_reg(int code, char* reg)
                     int args[nargs] = {};\
                     get_args(src + pc, args, nargs);
 
-int Command_x86_64::translate_single(char* src, int pc)
+int Command_x86_64::translate_cmd(char* src, int pc)
 {
+    assert(src);
+
     char label[CMD_BUFF_SIZE] = {0};
     make_label(pc, label);
     char code = src[pc];
@@ -324,8 +331,9 @@ int Command_x86_64::translate_single(char* src, int pc)
             GETARGS(1)
             sprintf(LBL
                 "pop rax\n"
-                "mov qword [r12+%d], rax\n",
+                "mov qword [rbp + %d * %d], rax\n",
                 label,
+                sizeof(int),
                 args[0]);
             break;
         }
@@ -333,9 +341,10 @@ int Command_x86_64::translate_single(char* src, int pc)
         {
             GETARGS(1)
             sprintf(LBL
-                "mov rax, [r12+%d]\n"
+                "mov rax, [rbp + %d * %d]\n"
                 "push rax\n",
                 label,
+                sizeof(int),
                 args[0]);
             break;
         }
@@ -349,9 +358,10 @@ int Command_x86_64::translate_single(char* src, int pc)
                 "mov rbx, 1000\n"
                 "div rbx\n"
                 "pop rbx\n"
-                "mov qword [r12 + rax], rbx\n",
+                "mov qword [rbp + %d * rax], rbx\n",
                 label,
-                reg);
+                reg,
+                sizeof(int));
             break;
         }
         case CMD_POPRAM_X:
@@ -363,10 +373,11 @@ int Command_x86_64::translate_single(char* src, int pc)
                 "mov rax, %s\n"
                 "mov rbx, 1000\n"
                 "div rbx\n"
-                "mov rax, qword [r12 + rax]\n"
+                "mov rax, qword [rbp + %d * rax]\n"
                 "push rax\n",
                 label,
-                reg);
+                reg,
+                sizeof(int));
             break;
         }
         case CMD_PUSHRAM_NX:
@@ -379,9 +390,11 @@ int Command_x86_64::translate_single(char* src, int pc)
                 "mov rbx, 1000\n"
                 "div rbx\n"
                 "pop rbx\n"
-                "mov qword [r12+rax+%d], rbx\n",
+                "mov qword [rbp + %d * rax + %d * %d], rbx\n",
                 label,
                 reg,
+                sizeof(int),
+                sizeof(int),
                 args[0]);
             break;
         }
@@ -395,9 +408,11 @@ int Command_x86_64::translate_single(char* src, int pc)
                 "mov rbx, 1000\n"
                 "div rbx\n"
                 "pop rbx\n"
-                "mov qword [r12+rax+%d], rbx\n",
+                "mov qword [rbp + %d * rax + %d * %d], rbx\n",
                 label,
                 reg,
+                sizeof(int),
+                sizeof(int),
                 args[1]);
             break;
         }
@@ -410,10 +425,12 @@ int Command_x86_64::translate_single(char* src, int pc)
                 "mov rax, %s\n"
                 "mov rbx, 1000\n"
                 "div rbx\n"
-                "mov rax, [r12+rax+%d]\n"
+                "mov rax, [rbp + %d * rax + %d * %d]\n"
                 "push rax\n",
                 label,
                 reg,
+                sizeof(int),
+                sizeof(int),
                 args[0]);
             break;
         }
@@ -426,9 +443,11 @@ int Command_x86_64::translate_single(char* src, int pc)
                 "mov rax, %s\n"
                 "mov rbx, 1000\n"
                 "div rbx\n"
-                "mov rax, [r12+rax+%d]\n"
+                "mov rax, [rbp+ %d * rax + %d * %d]\n"
                 "push rax\n",
                 label,
+                sizeof(int),
+                sizeof(int),
                 reg,
                 args[1]);
             break;
@@ -439,20 +458,75 @@ int Command_x86_64::translate_single(char* src, int pc)
 }
 
 
+int check_source(char* buff)
+{
+    assert(buff);
+    int pc = 0;
+    int signature = *(int*)buff;
+    if (signature != SIGNATURE) {
+        fprintf(stderr, "ERROR in translator. Signature mismatch.\nExpected: %d\nGot: %d\n", SIGNATURE, signature);
+        assert(signature == SIGNATURE);
+    }
+    pc += sizeof(SIGNATURE);
+
+    char version = buff[pc];
+    if (version != VERSION) {
+        fprintf(stderr, "ERROR in translator. Version mismatch.\n File VERSION: %d.\nProgram VERSION: %d.\n Recompile bin and restart program.\n", version, VERSION);
+        assert(version == VERSION);
+    }
+    return ++pc;
+}
+
+
+void make_header(char* dst, REGIMES regime)
+{
+    if (regime == TEXT)
+    {
+        time_t now = time(nullptr);
+        sprintf(dst, 
+            "; Translation %s\n\n"
+            "global _start\n\n"
+            "section .text\n\n"
+            "_start:\n\n"
+            "; Init header\n\n"
+            "sub rsp, %d\t; RAM init\n"
+            "mov rbp, rsp\t; Save RAM adress\n"
+            "finit\n\n"
+            "; Translated text start\n\n",
+            ctime(&now), RAM_SIZE * sizeof(int));
+    }
+}
+
+
 char* translate(const char* bin_file, REGIMES regime)
 {
     size_t src_size = 0;
     char* src = read_file_to_buffer_alloc(bin_file, "rb", &src_size);
+    int pc = 0;
+    pc = check_source(src);
     char* dst = (char*)calloc(MAX_PROG_SIZE, sizeof(dst[0]));
+    make_header(dst, regime);
+
     Command_x86_64 command(regime);
-    for (int pc = 0; pc < src_size;)
+    while (pc < src_size)
     {
-        pc = command.translate_single(src, pc);
+        pc = command.translate_cmd(src, pc);
         strcat(dst, command.get_body());
     }
     free(src);
+    return dst;
 }
 
-void plain_print(const char* filename, const char* text){}
+
+void plain_print(const char* filename, const char* text)
+{
+    assert(filename);
+    assert(text);
+    FILE* file = fopen(filename, "w");
+    assert(file);
+    fwrite(text, strlen(text), 1, file);
+    fclose(file);
+}
+
 
 void make_elf(const char* filename, const char* body){}

@@ -7,6 +7,7 @@ const unsigned int SIGNATURE =  'kauq';
 const int MAX_CMD_LEN = 10;
 const size_t MAX_NAME_LEN = 20;
 const int MAX_NUM_ARGS = 3;
+const int RAM_SIZE = 100000;
 
 //config file paths
 
