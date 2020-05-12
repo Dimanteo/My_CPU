@@ -223,7 +223,8 @@ int Command_x86_64::translate_single(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL
-                "call stdIN\n",
+                "call stdIN\n"
+                "add rsp, 8\n",
                 label);
             break;
         }
@@ -231,7 +232,8 @@ int Command_x86_64::translate_single(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL 
-                "call stdOUT\n",
+                "call stdOUT\n"
+                "add rsp, 8\n",
                 label);
             break;
         }
@@ -317,6 +319,120 @@ int Command_x86_64::translate_single(char* src, int pc)
                 label);
             break;
         }
+        case CMD_PUSHRAM:
+        {
+            GETARGS(1)
+            sprintf(LBL
+                "pop rax\n"
+                "mov qword [r12+%d], rax\n",
+                label,
+                args[0]);
+            break;
+        }
+        case CMD_POPRAM:
+        {
+            GETARGS(1)
+            sprintf(LBL
+                "mov rax, [r12+%d]\n"
+                "push rax\n",
+                label,
+                args[0]);
+            break;
+        }
+        case CMD_PUSHRAM_X:
+        {
+            GETARGS(1)
+            char reg[4] = {0};
+            match_reg(args[0], reg);
+            sprintf(LBL
+                "mov rax, %s\n"
+                "mov rbx, 1000\n"
+                "div rbx\n"
+                "pop rbx\n"
+                "mov qword [r12 + rax], rbx\n",
+                label,
+                reg);
+            break;
+        }
+        case CMD_POPRAM_X:
+        {
+            GETARGS(1)
+            char reg[4] = {0};
+            match_reg(args[0], reg);
+            sprintf(LBL
+                "mov rax, %s\n"
+                "mov rbx, 1000\n"
+                "div rbx\n"
+                "mov rax, qword [r12 + rax]\n"
+                "push rax\n",
+                label,
+                reg);
+            break;
+        }
+        case CMD_PUSHRAM_NX:
+        {
+            GETARGS(2)
+            char reg[4] = {0};
+            match_reg(args[1], reg);
+            sprintf(LBL
+                "mov rax, %s\n"
+                "mov rbx, 1000\n"
+                "div rbx\n"
+                "pop rbx\n"
+                "mov qword [r12+rax+%d], rbx\n",
+                label,
+                reg,
+                args[0]);
+            break;
+        }
+        case CMD_PUSHRAM_XN:
+        {
+            GETARGS(2)
+            char reg[4] = {0};
+            match_reg(args[0], reg);
+            sprintf(LBL
+                "mov rax, %s\n"
+                "mov rbx, 1000\n"
+                "div rbx\n"
+                "pop rbx\n"
+                "mov qword [r12+rax+%d], rbx\n",
+                label,
+                reg,
+                args[1]);
+            break;
+        }
+        case CMD_POPRAM_NX:
+        {
+            GETARGS(2)
+            char reg[4] = {0};
+            match_reg(args[1], reg);
+            sprintf(LBL
+                "mov rax, %s\n"
+                "mov rbx, 1000\n"
+                "div rbx\n"
+                "mov rax, [r12+rax+%d]\n"
+                "push rax\n",
+                label,
+                reg,
+                args[0]);
+            break;
+        }
+        case CMD_POPRAM_XN:
+        {
+            GETARGS(2)
+            char reg[4] = {0};
+            match_reg(args[0], reg);
+            sprintf(LBL
+                "mov rax, %s\n"
+                "mov rbx, 1000\n"
+                "div rbx\n"
+                "mov rax, [r12+rax+%d]\n"
+                "push rax\n",
+                label,
+                reg,
+                args[1]);
+            break;
+        }
     }
     free(label);
     pc += 1 + nargs * sizeof(int); 
@@ -336,3 +452,7 @@ char* translate(const char* bin_file, REGIMES regime)
     }
     free(src);
 }
+
+void plain_print(const char* filename, const char* text){}
+
+void make_elf(const char* filename, const char* body){}
