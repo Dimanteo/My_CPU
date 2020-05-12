@@ -1,40 +1,32 @@
+#include <string.h>
 #include "linker.h"
+#include "My_Headers/txt_files.h"
 
 enum REGIMES {TEXT = 's', BINARY = 0};
+
 /**
  *Contains binary and text representation for single x86_64 intstruction.
  **/
 class Command_x86_64
 {
 private:
-    char*     _opcodes;
-    char*     _binary;
+    char*     _body;
+    int       _size;
     REGIMES   _regime;
 
+    void make_label(int pc, char* label);
+    void get_args(char* operand, int* buff, int nargs);
+    void match_reg(int code, char* reg);
+
 public:
-    Command_x86_64(REGIMES regime, char* opcodes, char* binary);
-    char* getBody();
+    Command_x86_64(REGIMES regime);
+    int translate_single(char* src, int pc);
+    char* get_body();
     ~Command_x86_64();
 };
 
-Command_x86_64::Command_x86_64(REGIMES regime, char* opcodes, char* binary) : 
-    _regime  (regime),
-    _opcodes (opcodes),
-    _binary  (binary) 
-    {}
+char* translate(const char* bin_file, REGIMES regime);
 
-char* Command_x86_64::getBody()
-{
-    if (_regime == TEXT)
-    {
-        return _opcodes;
-    } else {
-        return _binary;
-    }
-}
+void plain_print(const char* filename, const char* text);
 
-Command_x86_64::~Command_x86_64() 
-{
-    _opcodes = nullptr;
-    _binary = nullptr;
-}
+void make_elf(const char* filename, const char* body);
