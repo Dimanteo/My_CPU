@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
     char* out_filename = nullptr;
     if (argc > 1)
     {
-        if (strcmp(argv[1], "-s"))
+        if (strcmp(argv[1], "-s") == 0)
         {
             regime = TEXT;
         } else {
@@ -120,9 +120,10 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL
-                "mov rax, 0x3C\n"
-                "mov rdi, 0\n"
-                "syscall\n",
+                "; END\n"
+                "\tmov rax, 0x3C\n"
+                "\tmov rdi, 0\n"
+                "\tsyscall\n",
                 label);
             break;
         }
@@ -130,9 +131,10 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             GETARGS(1);
             sprintf(LBL
-                "push %d\n",
+                "; PUSH\n"
+                "\tpush %d\n",
                 label,
-                (float)args[0] / 1000);
+                args[0]);
             break;
         }
         case CMD_POP:
@@ -141,7 +143,8 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[0], reg);
             sprintf(LBL
-                "pop %s\n",
+                "; POP\n"
+                "\tpop %s\n",
                 label,
                 reg);
             break;
@@ -150,10 +153,11 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL
-                "pop rsi\n"
-                "pop rdi\n"
-                "add rdi, rsi\n"
-                "push rdi\n",
+                "; ADD\n"
+                "\tpop rsi\n"
+                "\tpop rdi\n"
+                "\tadd rdi, rsi\n"
+                "\tpush rdi\n",
                 label);
                 break;
         }
@@ -161,10 +165,11 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL
-                "pop rsi\n"
-                "pop rdi\n"
-                "sub rsi, rdi\n"
-                "push rsi\n",
+                "; SUB\n"
+                "\tpop rsi\n"
+                "\tpop rdi\n"
+                "\tsub rsi, rdi\n"
+                "\tpush rsi\n",
                 label);
                 break;
         }
@@ -172,14 +177,15 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL
-                "push 1000\n"
-                "fild qword [rsp+16]\n"
-                "fild qword [rsp+8]\n"
-                "fild qword [rsp]\n"
-                "add rsp, 16\n"
-                "fdiv\n"
-                "fmul\n"
-                "fistp qword [rsp]\n",
+                "; MUL\n"
+                "\tpush 1000\n"
+                "\tfild qword [rsp+16]\n"
+                "\tfild qword [rsp+8]\n"
+                "\tfild qword [rsp]\n"
+                "\tadd rsp, 16\n"
+                "\tfdiv\n"
+                "\tfmul\n"
+                "\tfistp qword [rsp]\n",
                 label);
                 break;
         }
@@ -187,14 +193,15 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL
-                "push 1000\n"
-                "fild qword [rsp]\n"
-                "fild qword [rsp+8]\n"
-                "fild qword [rsp+16]\n"
-                "add rsp, 16\n"
-                "fdiv\n"
-                "fmul\n"
-                "fistp qword [rsp]\n",
+                "; DIV\n"
+                "\tpush 1000\n"
+                "\tfild qword [rsp]\n"
+                "\tfild qword [rsp+8]\n"
+                "\tfild qword [rsp+16]\n"
+                "\tadd rsp, 16\n"
+                "\tfdiv\n"
+                "\tfmul\n"
+                "\tfistp qword [rsp]\n",
                 label);
                 break;
         }
@@ -213,15 +220,16 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             }
             nargs = 0;
             sprintf(LBL 
-                "push 1000\n"
-                "fild qword [rsp]\n"
-                "fild qword [rsp+8]\n"
-                "fild qword [rsp]\n"
-                "add rsp, 8\n"
-                "fdiv\n"
-                "%s\n"
-                "fmul\n"
-                "fistp qword [rsp]\n",
+                "; SQR | SIN | COS\n"
+                "\tpush 1000\n"
+                "\tfild qword [rsp]\n"
+                "\tfild qword [rsp+8]\n"
+                "\tfild qword [rsp]\n"
+                "\tadd rsp, 8\n"
+                "\tfdiv\n"
+                "\t%s\n"
+                "\tfmul\n"
+                "\tfistp qword [rsp]\n",
                 label,
                 instr);
             break;
@@ -230,8 +238,9 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL
-                "call stdIN\n"
-                "add rsp, 8\n",
+                "; IN\n"
+                "\tcall stdIN\n"
+                "\tadd rsp, 8\n",
                 label);
             break;
         }
@@ -239,8 +248,9 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL 
-                "call stdOUT\n"
-                "add rsp, 8\n",
+                "; OUT\n"
+                "\tcall stdOUT\n"
+                "\tadd rsp, 8\n",
                 label);
             break;
         }
@@ -250,7 +260,8 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[0], reg);
             sprintf(LBL
-                "push %s\n",
+                "; PUSH_X\n"
+                "\tpush %s\n",
                 label,
                 reg);
             break;
@@ -261,7 +272,8 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char jmp_dest[CMD_BUFF_SIZE] = {0};
             make_label(args[0], jmp_dest);
             sprintf(LBL
-                "jmp %s\n",
+                "; JMP\n"
+                "\tjmp %s\n",
                 label,
                 jmp_dest);
             break;
@@ -299,10 +311,11 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char jmp_dest[CMD_BUFF_SIZE] = {0};
             make_label(args[0], jmp_dest);
             sprintf(LBL
-                "pop rdi\n"
-                "pop rsi\n"
-                "cmp rdi, rsi\n"
-                "%s %s\n",
+                "; Jxx\n"
+                "\tpop rdi\n"
+                "\tpop rsi\n"
+                "\tcmp rdi, rsi\n"
+                "\t%s %s\n",
                 label,
                 instr, jmp_dest);
             break;
@@ -313,7 +326,8 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char call_dest[CMD_BUFF_SIZE] = {0};
             make_label(args[0], call_dest);
             sprintf(LBL
-                "call %s\n",
+                "; CALL\n"
+                "\tcall %s\n",
                 label,
                 call_dest);
             break;
@@ -322,7 +336,8 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             nargs = 0;
             sprintf(LBL
-                "ret\n",
+                "; RET\n"
+                "\tret\n",
                 label);
             break;
         }
@@ -330,8 +345,9 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             GETARGS(1)
             sprintf(LBL
-                "pop rax\n"
-                "mov qword [rbp + %d * %d], rax\n",
+                "; PUSHRAM\n"
+                "\tpop rax\n"
+                "\tmov qword [rbp + %d * %d], rax\n",
                 label,
                 sizeof(int),
                 args[0]);
@@ -341,8 +357,9 @@ int Command_x86_64::translate_cmd(char* src, int pc)
         {
             GETARGS(1)
             sprintf(LBL
-                "mov rax, [rbp + %d * %d]\n"
-                "push rax\n",
+                "; POPRAM\n"
+                "\tmov rax, [rbp + %d * %d]\n"
+                "\tpush rax\n",
                 label,
                 sizeof(int),
                 args[0]);
@@ -354,11 +371,12 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[0], reg);
             sprintf(LBL
-                "mov rax, %s\n"
-                "mov rbx, 1000\n"
-                "div rbx\n"
-                "pop rbx\n"
-                "mov qword [rbp + %d * rax], rbx\n",
+                "; PUSHRAM_X\n"
+                "\tmov rax, %s\n"
+                "\tmov rbx, 1000\n"
+                "\tdiv rbx\n"
+                "\tpop rbx\n"
+                "\tmov qword [rbp + %d * rax], rbx\n",
                 label,
                 reg,
                 sizeof(int));
@@ -370,11 +388,12 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[0], reg);
             sprintf(LBL
-                "mov rax, %s\n"
-                "mov rbx, 1000\n"
-                "div rbx\n"
-                "mov rax, qword [rbp + %d * rax]\n"
-                "push rax\n",
+                "; POPRAM_X\n"
+                "\tmov rax, %s\n"
+                "\tmov rbx, 1000\n"
+                "\tdiv rbx\n"
+                "\tmov rax, qword [rbp + %d * rax]\n"
+                "\tpush rax\n",
                 label,
                 reg,
                 sizeof(int));
@@ -386,11 +405,12 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[1], reg);
             sprintf(LBL
-                "mov rax, %s\n"
-                "mov rbx, 1000\n"
-                "div rbx\n"
-                "pop rbx\n"
-                "mov qword [rbp + %d * rax + %d * %d], rbx\n",
+                "; PUSHRAM_NX\n"
+                "\tmov rax, %s\n"
+                "\tmov rbx, 1000\n"
+                "\tdiv rbx\n"
+                "\tpop rbx\n"
+                "\tmov qword [rbp + %d * rax + %d * %d], rbx\n",
                 label,
                 reg,
                 sizeof(int),
@@ -404,11 +424,12 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[0], reg);
             sprintf(LBL
-                "mov rax, %s\n"
-                "mov rbx, 1000\n"
-                "div rbx\n"
-                "pop rbx\n"
-                "mov qword [rbp + %d * rax + %d * %d], rbx\n",
+                "; PUSHRAM_XN\n"
+                "\tmov rax, %s\n"
+                "\tmov rbx, 1000\n"
+                "\tdiv rbx\n"
+                "\tpop rbx\n"
+                "\tmov qword [rbp + %d * rax + %d * %d], rbx\n",
                 label,
                 reg,
                 sizeof(int),
@@ -422,11 +443,12 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[1], reg);
             sprintf(LBL
-                "mov rax, %s\n"
-                "mov rbx, 1000\n"
-                "div rbx\n"
-                "mov rax, [rbp + %d * rax + %d * %d]\n"
-                "push rax\n",
+                "; POPRAM NX\n"
+                "\tmov rax, %s\n"
+                "\tmov rbx, 1000\n"
+                "\tdiv rbx\n"
+                "\tmov rax, [rbp + %d * rax + %d * %d]\n"
+                "\tpush rax\n",
                 label,
                 reg,
                 sizeof(int),
@@ -440,11 +462,12 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[0], reg);
             sprintf(LBL
-                "mov rax, %s\n"
-                "mov rbx, 1000\n"
-                "div rbx\n"
-                "mov rax, [rbp+ %d * rax + %d * %d]\n"
-                "push rax\n",
+                "; POPRAM_XN\n"
+                "\tmov rax, %s\n"
+                "\tmov rbx, 1000\n"
+                "\tdiv rbx\n"
+                "\tmov rax, [rbp+ %d * rax + %d * %d]\n"
+                "\tpush rax\n",
                 label,
                 sizeof(int),
                 sizeof(int),
@@ -453,8 +476,8 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             break;
         }
     }
-    free(label);
     pc += 1 + nargs * sizeof(int); 
+    return pc;
 }
 
 
@@ -489,9 +512,9 @@ void make_header(char* dst, REGIMES regime)
             "section .text\n\n"
             "_start:\n\n"
             "; Init header\n\n"
-            "sub rsp, %d\t; RAM init\n"
-            "mov rbp, rsp\t; Save RAM adress\n"
-            "finit\n\n"
+            "\tsub rsp, %d\t; RAM init\n"
+            "\tmov rbp, rsp\t; Save RAM adress\n"
+            "\tfinit\n\n"
             "; Translated text start\n\n",
             ctime(&now), RAM_SIZE * sizeof(int));
     }
@@ -502,8 +525,7 @@ char* translate(const char* bin_file, REGIMES regime)
 {
     size_t src_size = 0;
     char* src = read_file_to_buffer_alloc(bin_file, "rb", &src_size);
-    int pc = 0;
-    pc = check_source(src);
+    int pc = check_source(src);
     char* dst = (char*)calloc(MAX_PROG_SIZE, sizeof(dst[0]));
     make_header(dst, regime);
 
@@ -522,9 +544,9 @@ void plain_print(const char* filename, const char* text)
 {
     assert(filename);
     assert(text);
-    FILE* file = fopen(filename, "w");
+    FILE* file = fopen(filename, "wb");
     assert(file);
-    fwrite(text, strlen(text), 1, file);
+    fwrite(text, sizeof(text[0]), strlen(text), file);
     fclose(file);
 }
 
