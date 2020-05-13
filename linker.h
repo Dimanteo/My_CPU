@@ -24,7 +24,8 @@ const char CPU_OUT_FILE[]           = "Output/CPU.out";             // CPU outpu
 const char STACK_LOG_NAME[]         = "Debug/Stack.log";            // CPU Stack debug info file
 const char DEFAULT_STACK_LOG_NAME[] = "Stack.log";                  // Predefined stack debug info file
 //translator
-size_t MAX_PROG_SIZE = 1000000;
+const char STDTXT_FILENAME[]        = "iostd.s";
+size_t MAX_PROG_SIZE = 10000000;
 size_t CMD_BUFF_SIZE = 1000;
 
 enum REG_CODE {

@@ -521,6 +521,17 @@ void make_header(char* dst, REGIMES regime)
 }
 
 
+void include_std(char* dst, REGIMES regime)
+{
+    if (regime == TEXT)
+    {
+        size_t size = 0;
+        char* stdlib = read_file_to_buffer_alloc(STDTXT_FILENAME, "rb", &size);
+        strcat(dst, stdlib);
+        free(stdlib);
+    }
+}
+
 char* translate(const char* bin_file, REGIMES regime)
 {
     size_t src_size = 0;
@@ -535,6 +546,7 @@ char* translate(const char* bin_file, REGIMES regime)
         pc = command.translate_cmd(src, pc);
         strcat(dst, command.get_body());
     }
+    include_std(dst, regime);
     free(src);
     return dst;
 }
