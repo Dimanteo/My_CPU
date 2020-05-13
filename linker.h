@@ -25,7 +25,7 @@ const char STACK_LOG_NAME[]         = "Debug/Stack.log";            // CPU Stack
 const char DEFAULT_STACK_LOG_NAME[] = "Stack.log";                  // Predefined stack debug info file
 //translator
 size_t MAX_PROG_SIZE = 1000000;
-size_t CMD_BUFF_SIZE = 100;
+size_t CMD_BUFF_SIZE = 1000;
 
 enum REG_CODE {
     AX = 0,

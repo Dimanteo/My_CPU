@@ -39,6 +39,7 @@ int main(int argc, char* argv[])
 Command_x86_64::Command_x86_64(REGIMES regime) : _regime(regime)
 {
     _body = (char*)calloc(CMD_BUFF_SIZE, sizeof(_body[0]));
+    _size = 0;
 }
 
 
