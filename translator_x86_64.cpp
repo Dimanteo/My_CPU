@@ -241,7 +241,7 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             sprintf(LBL
                 "; IN\n"
                 "\tcall stdIN\n"
-                "\tadd rsp, 8\n",
+                "\tpush rax\n",
                 label);
             break;
         }
@@ -250,8 +250,7 @@ int Command_x86_64::translate_cmd(char* src, int pc)
             nargs = 0;
             sprintf(LBL 
                 "; OUT\n"
-                "\tcall stdOUT\n"
-                "\tadd rsp, 8\n",
+                "\tcall stdOUT\n",
                 label);
             break;
         }
