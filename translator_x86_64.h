@@ -2,6 +2,7 @@
 #include <time.h>
 #include "linker.h"
 #include "My_Headers/txt_files.h"
+#include "My_Headers/elf_maker.h"
 
 enum REGIMES {TEXT = 's', BINARY = 0};
 
@@ -12,7 +13,7 @@ class Command_x86_64
 {
 private:
     char*     _body;
-    int       _size;
+    size_t    _size;
     REGIMES   _regime;
 
     void make_label(int pc, char* label);
@@ -20,15 +21,21 @@ private:
     void match_reg(int code, char* reg);
 
 public:
+    const static int STDIN_POS  = 0;
+    const static int STDOUT_POS = 1;
+
     Command_x86_64(REGIMES regime);
-    int translate_cmd(char* src, int pc);
+    int translate_cmd(char* src, int pc, size_t offsets[]);
     char* get_body();
+    size_t get_size();
     ~Command_x86_64();
 };
 
 int check_source(char* buffer);
 
-void make_header(char* dst, REGIMES regime);
+size_t make_prologue(char* dst, REGIMES regime, size_t offsets[]);
+
+void make_epilogue(char* dst, REGIMES regime);
 
 char* translate(const char* bin_file, REGIMES regime);
 

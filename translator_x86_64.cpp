@@ -22,14 +22,16 @@ int main(int argc, char* argv[])
         }
     }
 
-    char* result = translate(BIN_FILE_NAME, regime);
+    size_t res_size = 0;
+    char* result = translate(BIN_FILE_NAME, regime, &res_size);
     assert(result);
     
     if (regime == TEXT)
     {
         plain_print(out_filename, result);
     } else {
-        make_elf(out_filename, result);
+        Exec_Creator creator;
+        creator.create_exec(Exec_Creator::ELF, result, res_size, out_filename);
     }
     free(result);
     return 0;
@@ -56,6 +58,16 @@ char* Command_x86_64::get_body()
     return _body;
 }
 
+size_t Command_x86_64::get_size()
+{
+    if (_regime == BINARY)
+    {
+        return _size;
+    } else {
+        return 0;
+    }
+}
+
 
 void Command_x86_64::make_label(int pc, char* label)
 {
@@ -80,34 +92,131 @@ void Command_x86_64::get_args(char* operand, int* buff, int nargs)
 void Command_x86_64::match_reg(int code, char* reg)
 {
     assert(reg);
-    switch (code)
+    if (_regime == TEXT)
     {
-        case AX:
-            strcpy(reg, "r8");
-            break;
-        case BX:
-            strcpy(reg, "r9");
-            break;
-        case CX:
-            strcpy(reg, "r10");
-            break;
-        case DX:
-            strcpy(reg, "r11");
-            break;
-        default:
+        switch (code)
+        {
+            case AX:
+                strcpy(reg, "r8");
+                break;
+            case BX:
+                strcpy(reg, "r9");
+                break;
+            case CX:
+                strcpy(reg, "r10");
+                break;
+            case DX:
+                strcpy(reg, "r11");
+                break;
+            default:
 #ifndef NDEBUG
-            fprintf(stderr, "Unknown register");
+                fprintf(stderr, "Unknown register");
 #endif
-            break;
+                break;
+        }
     }
 }
+
+
+int check_source(char* buff)
+{
+    assert(buff);
+    int pc = 0;
+    int signature = *(int*)buff;
+    if (signature != SIGNATURE) {
+        fprintf(stderr, "ERROR in translator. Signature mismatch.\nExpected: %d\nGot: %d\n", SIGNATURE, signature);
+        assert(signature == SIGNATURE);
+    }
+    pc += sizeof(SIGNATURE);
+
+    char version = buff[pc];
+    if (version != VERSION) {
+        fprintf(stderr, "ERROR in translator. Version mismatch.\n File VERSION: %d.\nProgram VERSION: %d.\n Recompile bin and restart program.\n", version, VERSION);
+        assert(version == VERSION);
+    }
+    return ++pc;
+}
+
+
+size_t make_prologue(char* dst, REGIMES regime, size_t offsets[])
+{
+    if (regime == TEXT)
+    {
+        time_t now = time(nullptr);
+        sprintf(dst, 
+            "; Translation %s\n\n"
+            "global _start\n\n"
+            "section .text\n\n"
+            "_start:\n\n"
+            "; Init header\n\n"
+            "\tsub rsp, %d\t; RAM init\n"
+            "\tmov rbp, rsp\t; Save RAM adress\n"
+            "\tfinit\n\n"
+            "; Translated text start\n\n",
+            ctime(&now), RAM_SIZE * sizeof(int));
+    }
+}
+
+
+void make_epilogue(char* dst, REGIMES regime)
+{
+    if (regime == TEXT)
+    {
+        size_t size = 0;
+        char* stdlib = read_file_to_buffer_alloc(STDTXT_FILENAME, "rb", &size);
+        strcat(dst, stdlib);
+        free(stdlib);
+    }
+}
+
+char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
+{
+    *dst_size = 0;
+    size_t src_size = 0;
+    char* src = read_file_to_buffer_alloc(bin_file, "rb", &src_size);
+    size_t offsets[src_size + 1] = {0};
+
+    int pc = check_source(src);
+
+    char* dst = (char*)calloc(MAX_PROG_SIZE, sizeof(dst[0]));
+
+    offsets[pc] = make_prologue(dst, regime, offsets);        // put stdIN offset in [0] and stdOUT in [1]
+
+    Command_x86_64 command(regime);
+    int previous_offs = 0;
+    while (pc < src_size)
+    {
+        previous_offs = offsets[pc];
+        pc = command.translate_cmd(src, pc, offsets);
+        strcat(dst, command.get_body());
+        offsets[pc] = previous_offs + command.get_size();
+    }
+    *dst_size = offsets[src_size];
+
+    make_epilogue(dst, regime);
+
+    free(src);
+    return dst;
+}
+
+
+void plain_print(const char* filename, const char* text)
+{
+    assert(filename);
+    assert(text);
+    FILE* file = fopen(filename, "wb");
+    assert(file);
+    fwrite(text, sizeof(text[0]), strlen(text), file);
+    fclose(file);
+}
+
 
 #define LBL _body, "%s:\n"
 #define GETARGS(n)  nargs = n ;\
                     int args[nargs] = {};\
                     get_args(src + pc, args, nargs);
 
-int Command_x86_64::translate_cmd(char* src, int pc)
+int Command_x86_64::translate_cmd(char* src, int pc, size_t offsets[])
 {
     assert(src);
 
@@ -479,88 +588,3 @@ int Command_x86_64::translate_cmd(char* src, int pc)
     pc += 1 + nargs * sizeof(int); 
     return pc;
 }
-
-
-int check_source(char* buff)
-{
-    assert(buff);
-    int pc = 0;
-    int signature = *(int*)buff;
-    if (signature != SIGNATURE) {
-        fprintf(stderr, "ERROR in translator. Signature mismatch.\nExpected: %d\nGot: %d\n", SIGNATURE, signature);
-        assert(signature == SIGNATURE);
-    }
-    pc += sizeof(SIGNATURE);
-
-    char version = buff[pc];
-    if (version != VERSION) {
-        fprintf(stderr, "ERROR in translator. Version mismatch.\n File VERSION: %d.\nProgram VERSION: %d.\n Recompile bin and restart program.\n", version, VERSION);
-        assert(version == VERSION);
-    }
-    return ++pc;
-}
-
-
-void make_header(char* dst, REGIMES regime)
-{
-    if (regime == TEXT)
-    {
-        time_t now = time(nullptr);
-        sprintf(dst, 
-            "; Translation %s\n\n"
-            "global _start\n\n"
-            "section .text\n\n"
-            "_start:\n\n"
-            "; Init header\n\n"
-            "\tsub rsp, %d\t; RAM init\n"
-            "\tmov rbp, rsp\t; Save RAM adress\n"
-            "\tfinit\n\n"
-            "; Translated text start\n\n",
-            ctime(&now), RAM_SIZE * sizeof(int));
-    }
-}
-
-
-void include_std(char* dst, REGIMES regime)
-{
-    if (regime == TEXT)
-    {
-        size_t size = 0;
-        char* stdlib = read_file_to_buffer_alloc(STDTXT_FILENAME, "rb", &size);
-        strcat(dst, stdlib);
-        free(stdlib);
-    }
-}
-
-char* translate(const char* bin_file, REGIMES regime)
-{
-    size_t src_size = 0;
-    char* src = read_file_to_buffer_alloc(bin_file, "rb", &src_size);
-    int pc = check_source(src);
-    char* dst = (char*)calloc(MAX_PROG_SIZE, sizeof(dst[0]));
-    make_header(dst, regime);
-
-    Command_x86_64 command(regime);
-    while (pc < src_size)
-    {
-        pc = command.translate_cmd(src, pc);
-        strcat(dst, command.get_body());
-    }
-    include_std(dst, regime);
-    free(src);
-    return dst;
-}
-
-
-void plain_print(const char* filename, const char* text)
-{
-    assert(filename);
-    assert(text);
-    FILE* file = fopen(filename, "wb");
-    assert(file);
-    fwrite(text, sizeof(text[0]), strlen(text), file);
-    fclose(file);
-}
-
-
-void make_elf(const char* filename, const char* body){}
