@@ -24,7 +24,9 @@ const char CPU_OUT_FILE[]           = "Output/CPU.out";             // CPU outpu
 const char STACK_LOG_NAME[]         = "Debug/Stack.log";            // CPU Stack debug info file
 const char DEFAULT_STACK_LOG_NAME[] = "Stack.log";                  // Predefined stack debug info file
 //translator
-const char STDTXT_FILENAME[]        = "iostd.s";
+const char STDTXT_FILENAME[]        = "iostd.s";                    // In/out functions assembly code.
+const char STDIN_BINARY[]           = "stdIN";                      // Binary input function
+const char STDOUT_BINARY[]          = "stdOUT";                     // Binary output function
 size_t MAX_PROG_SIZE = 10000000;
 size_t CMD_BUFF_SIZE = 1000;
 

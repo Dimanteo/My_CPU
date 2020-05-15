@@ -92,6 +92,7 @@ void Command_x86_64::get_args(char* operand, int* buff, int nargs)
 void Command_x86_64::match_reg(int code, char* reg)
 {
     assert(reg);
+
     if (_regime == TEXT)
     {
         switch (code)
@@ -121,6 +122,7 @@ void Command_x86_64::match_reg(int code, char* reg)
 int check_source(char* buff)
 {
     assert(buff);
+
     int pc = 0;
     int signature = *(int*)buff;
     if (signature != SIGNATURE) {
@@ -140,6 +142,9 @@ int check_source(char* buff)
 
 size_t make_prologue(char* dst, REGIMES regime, size_t offsets[])
 {
+    assert(dst);
+    assert(offsets);
+
     if (regime == TEXT)
     {
         time_t now = time(nullptr);
@@ -154,12 +159,42 @@ size_t make_prologue(char* dst, REGIMES regime, size_t offsets[])
             "\tfinit\n\n"
             "; Translated text start\n\n",
             ctime(&now), RAM_SIZE * sizeof(int));
+    } else {
+        /* On start adresses of input and output functions 
+           are stored in r13 and r14.
+           After that RAM is allocated, x87 is initialized
+           and control transfered to user's code. */
+        uint8_t init[] = 
+        {
+            0x49, 0xbd, 0x99, 0x00, 0x40, 0x00, 0x00,       // mov r13, stdIN
+        	0x00, 0x00, 0x00, 
+        	0x49, 0xbe, 0x31, 0x01, 0x40, 0x00, 0x00,       // mov r14. stdOUT
+        	0x00, 0x00, 0x00, 
+            0x48, 0x81, 0xec, 0xa0, 0x86, 0x01, 0x00, 	    // sub rsp, 100000 TODO changable size
+        	0x48, 0x89, 0xe5,             	                // mov rbp, rsp
+        	0x9b, 0xdb, 0xe3,                               // finit
+        	0xe9, 0x46, 0x01, 0x00, 0x00                    // jmp Main
+        };
+        size_t init_size = sizeof(init);
+
+        size_t in_size = 0, out_size = 0;
+        char* in_bin = read_file_to_buffer_alloc(STDIN_BINARY, "rb", &in_size);
+        char* out_bin = read_file_to_buffer_alloc(STDOUT_BINARY, "rb", &out_size);
+        sprintf(dst, "%s%s", in_bin, out_bin);
+        free(in_bin);
+        free(out_bin);
+        offsets[Command_x86_64::STDIN_POS]  = init_size;
+        offsets[Command_x86_64::STDOUT_POS] = init_size + in_size;
+        return init_size + in_size + out_size;
     }
+    return 0;
 }
 
 
 void make_epilogue(char* dst, REGIMES regime)
 {
+    assert(dst);
+
     if (regime == TEXT)
     {
         size_t size = 0;
@@ -171,6 +206,9 @@ void make_epilogue(char* dst, REGIMES regime)
 
 char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
 {
+    assert(bin_file);
+    assert(dst_size);
+
     *dst_size = 0;
     size_t src_size = 0;
     char* src = read_file_to_buffer_alloc(bin_file, "rb", &src_size);
@@ -211,19 +249,34 @@ void plain_print(const char* filename, const char* text)
 }
 
 
+int Command_x86_64::translate_cmd(char* src, int pc, size_t offsets[])
+{
+    assert(src);
+    assert(offsets);
+
+    if (_regime == TEXT)
+    {
+        pc = translate_text(src, pc);
+    } else {
+        pc = translate_bin(src, pc, offsets);
+    }
+    return pc;
+}
+
+
 #define LBL _body, "%s:\n"
 #define GETARGS(n)  nargs = n ;\
                     int args[nargs] = {};\
                     get_args(src + pc, args, nargs);
 
-int Command_x86_64::translate_cmd(char* src, int pc, size_t offsets[])
+int Command_x86_64::translate_text(char* src, int pc)
 {
     assert(src);
 
     char label[CMD_BUFF_SIZE] = {0};
     make_label(pc, label);
     char code = src[pc];
-    int nargs = 0;
+    int nargs = -1;
     switch (code)
     {
         case CMD_END:
@@ -585,6 +638,464 @@ int Command_x86_64::translate_cmd(char* src, int pc, size_t offsets[])
             break;
         }
     }
+
+    assert(nargs != -1);
+    
     pc += 1 + nargs * sizeof(int); 
+    return pc;
+}
+
+#undef LBL 
+#undef GETARGS(n)
+
+
+#define CLEARCPY\
+            _size = sizeof(cmd);\
+            memset(_body, '\0', _size + 1);\
+            memcpy(_body, cmd, _size);
+#define GETARGS(n)\
+            nargs = n;\
+            int argv[2] = {0};\
+            get_args(src + pc, argv, nargs);
+
+int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
+{
+    assert(src);
+
+    char code = src[pc];
+    int nargs = -1;
+
+    switch (code)
+    {
+        case CMD_END:
+        {
+            nargs = 0;
+            uint8_t cmd[] = 
+            {
+                0xb8, 0x3c, 0x00, 0x00, 0x00,   // mov rax, 0x3C
+                0xbf, 0x00, 0x00, 0x00, 0x00,   // mov rdi, 0
+                0x0f, 0x05                      // syscall
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_PUSH:
+        {
+            nargs = 1;
+            uint8_t cmd[] =
+            {
+                0x68, 0x00, 0x00, 0x00, 0x00    // push X
+            };
+            memcpy(cmd + 1, src + pc + 1, 4);
+            CLEARCPY;
+            break;
+        }
+        case CMD_POP:
+        {
+            GETARGS(1)
+            uint8_t reg = 0;
+            switch(argv[0])
+            {
+                case AX:
+                    reg = 0x58;
+                    break;
+                case BX:
+                    reg = 0x59;
+                    break;
+                case CX:
+                    reg = 0x5a;
+                    break;
+                case DX:
+                    reg = 0x5b;
+                    break;
+            }
+            uint8_t cmd[] =
+            {
+                0x41, reg
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_ADD:
+        {
+            nargs = 0;
+            uint8_t cmd[] =
+            {
+                0x5e,               // pop rsi
+                0x5f,               // pop rdi
+                0x48, 0x01, 0xf7,   // add rsi, rdi
+                0x57                // push rdi
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_SUB:
+        {
+            nargs = 0;
+            uint8_t cmd[] =
+            {
+                0x5e,               // pop rsi
+                0x5f,               // pop rdi
+                0x48, 0x29, 0xfe,   // sub rdi, rsi
+                0x57                // push rsi
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_MUL:
+        {
+            nargs = 0;
+            uint8_t cmd[] =
+            {
+                0x68, 0xe8, 0x03, 0x00, 0x00,   // push 1000
+                0xdf, 0x6c, 0x24, 0x10,         // fild [rsp+16]
+                0xdf, 0x6c, 0x24, 0x08,         // fild [rsp+8]
+                0xdf, 0x2c, 0x24,             	// fild [rsp]
+                0x48, 0x83, 0xc4, 0x10,         // add rsp, 16
+                0xde, 0xf9,                	    // fdiv
+                0xde, 0xc9,                	    // fmul
+                0xdf, 0x3c, 0x24                // fistp [rsp]
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_DIV:
+        {
+            nargs = 0;
+            uint8_t cmd[] =
+            {
+                0x68, 0xe8, 0x03, 0x00, 0x00,   // push 1000
+                0xdf, 0x2c, 0x24,             	// fild qword [rsp]
+                0xdf, 0x6c, 0x24, 0x08,         // fild qword [rsp+8]
+                0xdf, 0x6c, 0x24, 0x10,         // fild qword [rsp+16]
+                0x48, 0x83, 0xc4, 0x10,         // add rsp, 16
+                0xde, 0xf9,                	    // fdiv
+                0xde, 0xc9,                	    // fmul
+                0xdf, 0x3c, 0x24                // fistp qword [rsp]
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_SQR:
+        case CMD_SIN:
+        case CMD_COS:
+        {
+            nargs = 0;
+            uint8_t operand = 0;
+            switch (code)
+            {
+                case CMD_SQR:
+                    operand = 0xfa;
+                    break;
+                case CMD_SIN:;
+                    operand = 0xfe;
+                    break;
+                case CMD_COS:
+                    operand = 0xff;
+                    break;
+            }
+            uint8_t cmd[] =
+            {
+                0x68, 0xe8, 0x03, 0x00, 0x00,   // push 1000
+                0xdf, 0x2c, 0x24,               // fild qword [rsp]
+                0xdf, 0x6c, 0x24, 0x08,         // fild qword [rsp+8]
+                0xdf, 0x2c, 0x24,               // fild qword [rsp]
+                0x48, 0x83, 0xc4, 0x08,         // add rsp, 8
+                0xde, 0xf9,                     // fdiv
+                operand,                        // fsqrt/fsin/fcos
+                0xde, 0xc9,                     // fmul
+                0xdf, 0x3c, 0x24                // fistp qword [rsp]
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_IN:
+        {
+            nargs = 0;
+            uint8_t cmd[] =
+            {
+                0x41, 0xff, 0xd5,               // call r13 (stdIN)
+                0x50                            // push rax
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_OUT:
+        {
+            nargs = 0;
+            uint8_t cmd[] =
+            {
+                0x41, 0xff, 0xd6                // call r14 (stdOUT)
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_PUSHX:
+        {
+            GETARGS(1);
+            char reg = 0;
+            switch(argv[0])
+            {
+                case AX:
+                    reg = 0x50;
+                    break;
+                case BX:
+                    reg = 0x51;
+                    break;
+                case CX:
+                    reg = 0x52;
+                    break;
+                case DX:
+                    reg = 0x53;
+                    break;
+            }
+            uint8_t cmd[] =
+            {
+                0x41, reg
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_JUMP:
+        {
+            nargs = 1;
+            uint8_t cmd[] =
+            {
+                0xe9, 0x00, 0x00, 0x00, 0x00    // jmp Address
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_JUMPA:
+        case CMD_JUMPAE:
+        case CMD_JUMPB:
+        case CMD_JUMPBE:
+        case CMD_JUMPE:
+        case CMD_JUMPNE:
+        {
+            uint8_t byte = 0;
+            switch (code)
+            {
+                case CMD_JUMPA:
+                    byte = 0x87;
+                    break;
+                case CMD_JUMPAE:
+                    byte = 0x83;
+                    break;
+                case CMD_JUMPB:
+                    byte = 0x82;
+                    break;
+                case CMD_JUMPBE:
+                    byte = 0x86;
+                    break;
+                case CMD_JUMPE:
+                    byte = 0x84;
+                    break;
+                case CMD_JUMPNE:
+                    byte = 0x85;
+                    break;
+            }
+            nargs = 0;
+            uint8_t cmd[] =
+            {
+                0x5f,                                   // pop rdi
+                0x5e,                                   // pop rsi
+                0x48, 0x39, 0xf7,                       // cmp rdi, rsi
+                0x0f, byte, 0x00, 0x00, 0x00, 0x00      // jxx Addr
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_CALL:
+        {
+            nargs = 1;
+            uint8_t cmd[] =
+            {
+                0xe8, 0x00, 0x00, 0x00, 0x00
+            };
+            CLEARCPY;
+            break;
+        }
+        case CMD_RET:
+        {
+            nargs = 0;
+            uint8_t cmd[] = {0xc3};
+            CLEARCPY;
+            break;
+        }
+        case CMD_PUSHRAM:
+        {
+            GETARGS(1)
+            uint8_t cmd[] =
+            {
+                0x58,                                       // pop rax
+                0x48, 0x89, 0x85, 0x00, 0x00, 0x00, 0x00    // mov qword [rbp + Const], rax
+            };
+            memcpy(cmd + 4, (uint8_t*)argv, 4);
+            CLEARCPY
+            break;
+        }
+        case CMD_POPRAM:
+        {
+            GETARGS(1)
+            uint8_t cmd[] =
+            {
+                0x48, 0x8b, 0x85, 0x00, 0x00, 0x00, 0x00,   // mov rax, [rbp + Const]
+                0x50                                        // push rax
+            };
+            memcpy(cmd + 3, (uint8_t*)argv, 4);
+            CLEARCPY
+            break;
+        }
+        case CMD_PUSHRAM_X:
+        {
+            GETARGS(1)
+            uint8_t reg = 0;
+            switch(argv[0])
+            {
+                case AX:
+                    reg = 0xc0;
+                    break;
+                case BX:
+                    reg = 0xc8;
+                    break;
+                case CX:
+                    reg = 0xd0;
+                    break;
+                case DX:
+                    reg = 0xd8;
+                    break;
+            }
+            uint8_t cmd[] =
+            {
+                0x4c, 0x89, reg,                // mov rax, Reg
+                0xbb, 0xe8, 0x03, 0x00, 0x00,   // mov rbx, 1000
+                0x48, 0xf7, 0xf3,               // div rbx
+                0x5b,                           // pop rbx
+                0x48, 0x89, 0x5c, 0x85, 0x00    // mov qword [rbp + 4 * rax], rbx
+            };
+            CLEARCPY
+            break;
+        }
+        case CMD_POPRAM_X:
+        {
+            GETARGS(1)
+            uint8_t reg = 0;
+            switch(argv[0])
+            {
+                case AX:
+                    reg = 0xc0;
+                    break;
+                case BX:
+                    reg = 0xc8;
+                    break;
+                case CX:
+                    reg = 0xd0;
+                    break;
+                case DX:
+                    reg = 0xd8;
+                    break;
+            }
+            uint8_t cmd[] =
+            {
+                0x4c, 0x89, reg,                // mov rax, Reg
+                0xbb, 0xe8, 0x03, 0x00, 0x00,   // mov rbx, 1000
+                0x48, 0xf7, 0xf3,               // div rbx
+                0x48, 0x8b, 0x44, 0x85, 0x00,   // mov rax, qword [rbp + 4 * rax]
+                0x50                            // push rax
+            };
+            CLEARCPY
+            break;
+        }
+        case CMD_PUSHRAM_NX:
+        case CMD_PUSHRAM_XN:
+        {
+            GETARGS(2)
+            int number = 0;
+            int reg_code = 0;
+            uint8_t reg = 0;
+            if (code == CMD_PUSHRAM_NX)
+            {
+                number = argv[0];
+                reg_code = argv[1];
+            } else {
+                number = argv[1];
+                reg_code = argv[0];
+            }
+            switch(reg_code)
+            {
+                case AX:
+                    reg = 0xc0;
+                    break;
+                case BX:
+                    reg = 0xc8;
+                    break;
+                case CX:
+                    reg = 0xd0;
+                    break;
+                case DX:
+                    reg = 0xd8;
+                    break;
+            }
+            uint8_t cmd[] =
+            {
+                0x4c, 0x89, reg,                                // mov rax, Reg
+                0xbb, 0xe8, 0x03, 0x00, 0x00,                   // mov rbx, 1000
+                0x48, 0xf7, 0xf3,                               // div rbx
+                0x5b,                                           // pop rbx
+                0x48, 0x89, 0x9c, 0x85, 0x00, 0x00, 0x00, 0x00  // mov qword [rbp + 4 * rax + Const], rbx
+            };
+            memcpy(cmd + 16, &number, 4);
+            CLEARCPY
+            break;
+        }
+        case CMD_POPRAM_NX:
+        case CMD_POPRAM_XN:
+        {
+            GETARGS(2)
+            int number = 0;
+            int reg_code = 0;
+            uint8_t reg = 0;
+            if (code == CMD_PUSHRAM_NX)
+            {
+                number = argv[0];
+                reg_code = argv[1];
+            } else {
+                number = argv[1];
+                reg_code = argv[0];
+            }
+            switch(reg_code)
+            {
+                case AX:
+                    reg = 0xc0;
+                    break;
+                case BX:
+                    reg = 0xc8;
+                    break;
+                case CX:
+                    reg = 0xd0;
+                    break;
+                case DX:
+                    reg = 0xd8;
+                    break;
+            }
+            uint8_t cmd[] =
+            {
+                0x4c, 0x89, reg,                                    // mov rax, Reg
+                0xbb, 0xe8, 0x03, 0x00, 0x00,                       // mov rbx, 1000
+                0x48, 0xf7, 0xf3,                                   // div rbx
+                0x48, 0x8b, 0x84, 0x85, 0x00, 0x00, 0x00, 0x00,     // mov rax, [rbp + 4 * rax + Const]
+                0x50                                                // push rax
+            };
+            memcpy(cmd + 15, &number, 4);
+            CLEARCPY
+            break;
+        }
+    }
+
+    assert(_size);
+    assert(nargs != -1);
+
+    pc += 1 + nargs * sizeof(int);
     return pc;
 }

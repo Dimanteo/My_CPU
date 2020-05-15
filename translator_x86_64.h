@@ -19,6 +19,8 @@ private:
     void make_label(int pc, char* label);
     void get_args(char* operand, int* buff, int nargs);
     void match_reg(int code, char* reg);
+    int translate_text(char* src, int pc);
+    int translate_bin(char* src, int pc, size_t offsets[]);
 
 public:
     const static int STDIN_POS  = 0;
