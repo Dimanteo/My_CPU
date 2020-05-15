@@ -4,7 +4,7 @@
 int main(int argc, char* argv[])
 {
     REGIMES regime = BINARY;
-    char* out_filename = nullptr;
+    char* out_filename = "b.out";
     if (argc > 1)
     {
         if (strcmp(argv[1], "-s") == 0)
@@ -17,8 +17,6 @@ int main(int argc, char* argv[])
         if (argc > 2)
         {
             out_filename = argv[2];
-        } else {
-            out_filename = "b.out";
         }
     }
 
@@ -31,7 +29,16 @@ int main(int argc, char* argv[])
         plain_print(out_filename, result);
     } else {
         Exec_Creator creator;
-        creator.create_exec(Exec_Creator::ELF, result, res_size, out_filename);
+
+#define EXEC_CREATOR_LOG        
+#ifndef NDEBUG
+    #define EXEC_CREATOR_LOG , ELF_MAKER_LOG
+#endif
+
+        creator.create_exec(Exec_Creator::ELF, result, res_size, out_filename EXEC_CREATOR_LOG);
+
+#undef EXEC_CREATOR_LOG
+
     }
     free(result);
     return 0;
@@ -50,6 +57,16 @@ Command_x86_64::~Command_x86_64()
     free(_body);
     _body = nullptr;
     _size = 0;
+}
+
+
+void Command_x86_64::dump(FILE* log_fp)
+{
+    fprintf(log_fp, "REGIME : [%d] %s\n"
+                  "size   : %d\n"
+                  "body\n{\n%s\n}\n",
+                  _regime, _regime == TEXT ? "TEXT" : "BINARY",
+                  _size, _body);
 }
 
 
@@ -180,7 +197,9 @@ size_t make_prologue(char* dst, REGIMES regime, size_t offsets[])
         size_t in_size = 0, out_size = 0;
         char* in_bin = read_file_to_buffer_alloc(STDIN_BINARY, "rb", &in_size);
         char* out_bin = read_file_to_buffer_alloc(STDOUT_BINARY, "rb", &out_size);
-        sprintf(dst, "%s%s", in_bin, out_bin);
+        memcpy(dst, init, init_size);
+        memcpy(dst + init_size, in_bin, in_size);
+        memcpy(dst + init_size + in_size, out_bin, out_size);
         free(in_bin);
         free(out_bin);
         offsets[Command_x86_64::STDIN_POS]  = init_size;
@@ -213,6 +232,13 @@ char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
     size_t src_size = 0;
     char* src = read_file_to_buffer_alloc(bin_file, "rb", &src_size);
     size_t offsets[src_size + 1] = {0};
+
+#ifndef NDEBUG
+    FILE* log_file = fopen(TRANSLATOR_LOG, "w");
+    time_t now = time(nullptr);
+    fprintf(log_file, "%s\nMax PC value = %d\n", ctime(&now), src_size - 1);
+    fclose(log_file);
+#endif
 
     int pc = check_source(src);
 
@@ -833,7 +859,7 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
         case CMD_PUSHX:
         {
             GETARGS(1);
-            char reg = 0;
+            uint8_t reg = 0;
             switch(argv[0])
             {
                 case AX:
@@ -895,7 +921,7 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
                     byte = 0x85;
                     break;
             }
-            nargs = 0;
+            nargs = 1;
             uint8_t cmd[] =
             {
                 0x5f,                                   // pop rdi
@@ -1092,6 +1118,29 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
             break;
         }
     }
+
+#ifndef NDEBUG
+    FILE* log_file = fopen(TRANSLATOR_LOG, "a");
+    fprintf(log_file, "\n"
+                      "PC             = %d\n"
+                      "Offset         = %d\n"
+                      "Code           = %c [%#X]\n"
+                      "Number of args = %d\n",
+            pc, offsets[pc],  code, code, nargs);
+    switch (code)
+    {            
+#define DEF_CMD(CMD_name, token, scanf_sample, number_of_args, instructions, disasm_print)\
+        case CMD_##CMD_name:\
+            fprintf(log_file, #CMD_name "\n");\
+            break;
+
+    #include "commands.h"
+
+    }
+#undef DEF_CMD
+    dump(log_file);
+    fclose(log_file);
+#endif
 
     assert(_size);
     assert(nargs != -1);

@@ -15,7 +15,7 @@ const int RAM_SIZE = 100000;
 const char BIN_FILE_NAME[] = "bin.dak";                             // asm compilation result
 //asm
 const char INPUT_FILENAME[] = "asm_stdin.txt";                      // asm input file
-const char LISTING_FILE[]   = "Output/compile.lst";                 // Compilation listing
+const char LISTING_FILE[]   = "Debug/compile.lst";                  // Compilation listing
 //disasm
 const char DISASM_OUTPUT_FILENAME[] = "Output/disasm.out";          // DisAsm output file
 //cpu
@@ -27,6 +27,9 @@ const char DEFAULT_STACK_LOG_NAME[] = "Stack.log";                  // Predefine
 const char STDTXT_FILENAME[]        = "iostd.s";                    // In/out functions assembly code.
 const char STDIN_BINARY[]           = "stdIN";                      // Binary input function
 const char STDOUT_BINARY[]          = "stdOUT";                     // Binary output function
+const char TRANSLATOR_LOG[]         = "Debug/Trans.log";            // Translator debug info file
+const char ELF_MAKER_LOG[]          = "Debug/elf_maker.log";        // ELF file generator log
+
 size_t MAX_PROG_SIZE = 10000000;
 size_t CMD_BUFF_SIZE = 1000;
 

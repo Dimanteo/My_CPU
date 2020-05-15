@@ -30,6 +30,7 @@ public:
     int translate_cmd(char* src, int pc, size_t offsets[]);
     char* get_body();
     size_t get_size();
+    void dump(FILE* log_fp);
     ~Command_x86_64();
 };
 
@@ -39,7 +40,7 @@ size_t make_prologue(char* dst, REGIMES regime, size_t offsets[]);
 
 void make_epilogue(char* dst, REGIMES regime);
 
-char* translate(const char* bin_file, REGIMES regime);
+char* translate(const char* bin_file, REGIMES regime, size_t* res_size);
 
 void plain_print(const char* filename, const char* text);
 

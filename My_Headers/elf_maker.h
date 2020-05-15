@@ -12,21 +12,45 @@ public:
     Exec_Creator(){}
     ~Exec_Creator(){}
 
-    void create_exec(FORMAT format, const char* body, size_t size, const char* filename)
+    void create_exec(FORMAT format, const char* body, size_t size, const char* filename, const char* logf = nullptr)
     {
+        assert(filename);
+        assert(body);
+
         if (format == ELF)
         {
             char* header = create_elf_head(size);
             create_elf(header, body, size, filename);
             free(header);
         }
+#ifndef NDEBUG
+        dump(filename, logf);
+#endif  
+    }
+
+    void dump(const char* elf_file, const char* log_file = nullptr)
+    {
+        char name_buff[strlen(elf_file) + strlen(".log")] = "";
+        if (log_file == nullptr)
+        {
+            sprintf(name_buff, "%s.log", elf_file);
+            log_file = name_buff;
+        }
+        char request[strlen(log_file) * 3 + strlen(elf_file) * 3 + 61] = "";
+        sprintf(request, "readelf -h %s >  %s\n"
+                         "readelf -l %s >> %s\n"
+                         "objdump -d -M intel %s >> %s\n",
+                         elf_file, log_file, 
+                         elf_file, log_file,
+                         elf_file, log_file);
+        system(request);
     }
 
 private:
 
     const size_t elf_header_size = 0x80;
 
-    char* create_elf_head(int64_t size)
+    char* create_elf_head(uint64_t size)
     {
         // Params for executable ELF header on Linux x86_64
         Elf64_Addr entry_point = 0x400080;
@@ -79,19 +103,22 @@ private:
             align	                // p_align
         };
 
-        char* buffer = (char*)calloc(sizeof(buffer[0]), elf_header_size);
-        sprintf(buffer, "%s%s", (char*)&elf_h, (char*)&prog_h);
+        char* buffer = (char*)calloc(elf_header_size, sizeof(buffer[0]));
+        memcpy(buffer, &elf_h, sizeof(elf_h));
+        memcpy(buffer + sizeof(elf_h), &prog_h, sizeof(prog_h));
         return buffer;
     }
 
 
     void create_elf(const char* header, const char* body, size_t size, const char* filename)
     {
+        assert(filename);
+        assert(header);
+        assert(body);
+
         FILE* file = fopen(filename, "wb");
         fwrite(header, sizeof(header[0]), elf_header_size, file);
         fwrite(body, sizeof(body[0]), size, file);
-        fclose(file);
+        fclose(file);      
     }
-
-    
 };
