@@ -45,6 +45,9 @@ int main(int argc, char* argv[])
 }
 
 
+//////////////////// Command_x86_64 properties //////////////////////
+
+
 Command_x86_64::Command_x86_64(REGIMES regime) : _regime(regime)
 {
     _body = (char*)calloc(CMD_BUFF_SIZE, sizeof(_body[0]));
@@ -136,6 +139,99 @@ void Command_x86_64::match_reg(int code, char* reg)
 }
 
 
+int Command_x86_64::translate_cmd(char* src, int pc, size_t offsets[])
+{
+    assert(src);
+    assert(offsets);
+
+    if (_regime == TEXT)
+    {
+        pc = translate_text(src, pc);
+    } else {
+#ifndef NDEBUG
+        FILE* log_file = fopen(TRANSLATOR_LOG, "a");
+        fprintf(log_file, "\nOffset         = %d\n", offsets[pc]);
+        fclose(log_file);
+#endif        
+        pc = translate_bin(src, pc);
+    }
+    return pc;
+}
+
+
+//////////////////////// Text translation properties //////////////////////////////
+
+
+void plain_print(const char* filename, const char* text)
+{
+    assert(filename);
+    assert(text);
+    FILE* file = fopen(filename, "wb");
+    assert(file);
+    fwrite(text, sizeof(text[0]), strlen(text), file);
+    fclose(file);
+}
+
+
+void make_epilogue(char* dst, REGIMES regime)
+{
+    assert(dst);
+    size_t size = 0;
+    char* stdlib = read_file_to_buffer_alloc(STDTXT_FILENAME, "rb", &size);
+    strcat(dst, stdlib);
+    free(stdlib);
+}
+
+
+/////////////////////////// Binary translation properties ///////////////////////
+
+
+// Jump destination address calculates as relative offset from next command.
+
+void patch_on_byte(char* src, int pc, char* dst, size_t offsets[], size_t instr_sz, int byte_pos)
+{
+    int dst_pc = *(int*)(src + pc + 1);
+    uint32_t distance = offsets[dst_pc] - (offsets[pc] + instr_sz);
+    size_t arg_offset = offsets[pc] + byte_pos;
+    memcpy(dst + arg_offset, &distance, 4);
+}
+
+
+void patch(char* src, int pc, size_t src_size, char* dst, size_t offsets[])
+{
+
+    Command_x86_64 command(BINARY);
+    for (;pc < src_size; pc++)
+    {
+        if (offsets[pc] != 0)
+        {
+            char code = src[pc];
+            command.translate_cmd(src, pc, offsets);
+            switch (code)
+            {
+                case CMD_JUMP:
+                    patch_on_byte(src, pc, dst, offsets, command.get_size(), 1);
+                    break;
+                case CMD_JUMPA:
+                case CMD_JUMPAE:
+                case CMD_JUMPB:
+                case CMD_JUMPBE:
+                case CMD_JUMPE:
+                case CMD_JUMPNE:
+                    patch_on_byte(src, pc, dst, offsets, command.get_size(), 7);
+                    break;
+                case CMD_CALL:
+                    patch_on_byte(src, pc, dst, offsets, command.get_size(), 1);
+                    break;
+            }
+        }
+    }
+}
+
+
+///////////////////////////////// General translation functions ////////////////////////////////
+
+
 int check_source(char* buff)
 {
     assert(buff);
@@ -211,15 +307,6 @@ size_t make_prologue(char* dst, REGIMES regime, size_t offsets[])
 }
 
 
-void make_epilogue(char* dst, REGIMES regime)
-{
-    assert(dst);
-    size_t size = 0;
-    char* stdlib = read_file_to_buffer_alloc(STDTXT_FILENAME, "rb", &size);
-    strcat(dst, stdlib);
-    free(stdlib);
-}
-
 char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
 {
     assert(bin_file);
@@ -271,70 +358,6 @@ char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
 
     free(src);
     return dst;
-}
-
-
-void plain_print(const char* filename, const char* text)
-{
-    assert(filename);
-    assert(text);
-    FILE* file = fopen(filename, "wb");
-    assert(file);
-    fwrite(text, sizeof(text[0]), strlen(text), file);
-    fclose(file);
-}
-
-
-void patch_on_byte(char* src, int pc, char* dst, size_t offsets[], uint32_t instr_sz, int byte_pos)
-{
-    int dst_pc = *(int*)(src + pc + 1);
-    uint32_t distance = offsets[dst_pc] - offsets[pc] - instr_sz;
-    size_t arg_offset = offsets[pc] + byte_pos;
-    memcpy(dst + arg_offset, &distance, 4);
-}
-
-
-void patch(char* src, int pc, size_t src_size, char* dst, size_t offsets[])
-{
-    for (;pc < src_size; pc++)
-    {
-        if (offsets[pc] != 0)
-        {
-            char code = src[pc];
-            switch (code)
-            {
-                case CMD_JUMP:
-                    patch_on_byte(src, pc, dst, offsets, 10, 1);
-                    break;
-                case CMD_JUMPA:
-                case CMD_JUMPAE:
-                case CMD_JUMPB:
-                case CMD_JUMPBE:
-                case CMD_JUMPE:
-                case CMD_JUMPNE:
-                    patch_on_byte(src, pc, dst, offsets, 11, 7);
-                    break;
-                case CMD_CALL:
-                    patch_on_byte(src, pc, dst, offsets, 5, 1);
-                    break;
-            }
-        }
-    }
-}
-
-
-int Command_x86_64::translate_cmd(char* src, int pc, size_t offsets[])
-{
-    assert(src);
-    assert(offsets);
-
-    if (_regime == TEXT)
-    {
-        pc = translate_text(src, pc);
-    } else {
-        pc = translate_bin(src, pc, offsets);
-    }
-    return pc;
 }
 
 
@@ -436,7 +459,7 @@ int Command_x86_64::translate_text(char* src, int pc)
                 "\tfild qword [rsp+8]\n"
                 "\tfild qword [rsp+16]\n"
                 "\tadd rsp, 16\n"
-                "\tfdiv\n"
+                "\tfdivr\n"
                 "\tfmul\n"
                 "\tfistp qword [rsp]\n",
                 label);
@@ -476,7 +499,15 @@ int Command_x86_64::translate_text(char* src, int pc)
             nargs = 0;
             sprintf(LBL
                 "; IN\n"
+                "\tpush r8\n"
+                "\tpush r9\n" 
+                "\tpush r10\n" 
+                "\tpush r11\n"
                 "\tcall stdIN\n"
+                "\tpop r11\n"
+                "\tpop r10\n"
+                "\tpop r9\n"
+                "\tpop r8\n"
                 "\tpush rax\n",
                 label);
             break;
@@ -486,7 +517,17 @@ int Command_x86_64::translate_text(char* src, int pc)
             nargs = 0;
             sprintf(LBL 
                 "; OUT\n"
-                "\tcall stdOUT\n",
+                "\tpop rax\n"
+                "\tpush r8\n"
+                "\tpush r9\n" 
+                "\tpush r10\n" 
+                "\tpush r11\n"
+                "\tpush rax\n"
+                "\tcall stdOUT\n"
+                "\tpop r11\n"
+                "\tpop r10\n"
+                "\tpop r9\n"
+                "\tpop r8\n",
                 label);
             break;
         }
@@ -525,16 +566,16 @@ int Command_x86_64::translate_text(char* src, int pc)
             switch(code)
             {
                 case CMD_JUMPA:
-                    strcpy(instr, "ja");
+                    strcpy(instr, "jg");
                     break;
                 case CMD_JUMPAE:
-                    strcpy(instr, "jae");
+                    strcpy(instr, "jge");
                     break;
                 case CMD_JUMPB:
-                    strcpy(instr, "jb");
+                    strcpy(instr, "jl");
                     break;
                 case CMD_JUMPBE:
-                    strcpy(instr, "jbe");
+                    strcpy(instr, "jle");
                     break;
                 case CMD_JUMPE:
                     strcpy(instr, "je");
@@ -731,7 +772,7 @@ int Command_x86_64::translate_text(char* src, int pc)
             int argv[2] = {0};\
             get_args(src + pc, argv, nargs);
 
-int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
+int Command_x86_64::translate_bin(char* src, int pc)
 {
     assert(src);
 
@@ -796,8 +837,8 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
             {
                 0x5e,               // pop rsi
                 0x5f,               // pop rdi
-                0x48, 0x01, 0xf7,   // add rsi, rdi
-                0x57                // push rdi
+                0x48, 0x01, 0xfe,   // add rsi, rdi
+                0x56                // push rsi
             };
             CLEARCPY;
             break;
@@ -810,7 +851,7 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
                 0x5e,               // pop rsi
                 0x5f,               // pop rdi
                 0x48, 0x29, 0xfe,   // sub rdi, rsi
-                0x57                // push rsi
+                0x56                // push rdi
             };
             CLEARCPY;
             break;
@@ -842,7 +883,7 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
                 0xdf, 0x6c, 0x24, 0x08,         // fild qword [rsp+8]
                 0xdf, 0x6c, 0x24, 0x10,         // fild qword [rsp+16]
                 0x48, 0x83, 0xc4, 0x10,         // add rsp, 16
-                0xde, 0xf9,                	    // fdiv
+                0xde, 0xf1,                	    // fdiv
                 0xde, 0xc9,                	    // fmul
                 0xdf, 0x3c, 0x24                // fistp qword [rsp]
             };
@@ -875,19 +916,43 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
                 0xdf, 0x2c, 0x24,               // fild qword [rsp]
                 0x48, 0x83, 0xc4, 0x08,         // add rsp, 8
                 0xde, 0xf9,                     // fdiv
-                operand,                        // fsqrt/fsin/fcos
+                0xd9, operand,                  // fsqrt/fsin/fcos
                 0xde, 0xc9,                     // fmul
                 0xdf, 0x3c, 0x24                // fistp qword [rsp]
             };
             CLEARCPY;
             break;
         }
+/*
+push r8
+push r9
+push r10
+push r11
+*/        
+#define SAVEREGS \
+0x41, 0x50, \
+0x41, 0x51, \
+0x41, 0x52, \
+0x41, 0x53
+/*
+pop r11
+pop r10
+pop r9
+pop r8
+*/
+#define LOADREGS \
+0x41, 0x5b, \
+0x41, 0x5a, \
+0x41, 0x59, \
+0x41, 0x58
         case CMD_IN:
         {
             nargs = 0;
             uint8_t cmd[] =
             {
+                SAVEREGS,
                 0x41, 0xff, 0xd5,               // call r13 (stdIN)
+                LOADREGS,
                 0x50                            // push rax
             };
             CLEARCPY;
@@ -898,11 +963,18 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
             nargs = 0;
             uint8_t cmd[] =
             {
-                0x41, 0xff, 0xd6                // call r14 (stdOUT)
+                0x58,                           // pop rax
+                SAVEREGS,
+                0x50,                           // push rax
+                0x41, 0xff, 0xd6,               // call r14 (stdOUT)
+                LOADREGS
             };
             CLEARCPY;
             break;
         }
+#undef SAVEREGS
+#undef LOADREGS
+
         case CMD_PUSHX:
         {
             GETARGS(1);
@@ -950,16 +1022,16 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
             switch (code)
             {
                 case CMD_JUMPA:
-                    byte = 0x87;
+                    byte = 0x8f;
                     break;
                 case CMD_JUMPAE:
-                    byte = 0x83;
+                    byte = 0x8d;
                     break;
                 case CMD_JUMPB:
-                    byte = 0x82;
+                    byte = 0x8c;
                     break;
                 case CMD_JUMPBE:
-                    byte = 0x86;
+                    byte = 0x8e;
                     break;
                 case CMD_JUMPE:
                     byte = 0x84;
@@ -1168,12 +1240,10 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
 
 #ifndef NDEBUG
     FILE* log_file = fopen(TRANSLATOR_LOG, "a");
-    fprintf(log_file, "\n"
-                      "PC             = %d\n"
-                      "Offset         = %d\n"
+    fprintf(log_file, "PC             = %d\n"
                       "Code           = %c [%#X]\n"
                       "Number of args = %d\n",
-            pc, offsets[pc],  code, code, nargs);
+            pc, code, code, nargs);
     switch (code)
     {            
 #define DEF_CMD(CMD_name, token, scanf_sample, number_of_args, instructions, disasm_print)\

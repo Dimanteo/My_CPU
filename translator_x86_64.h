@@ -20,7 +20,7 @@ private:
     void get_args(char* operand, int* buff, int nargs);
     void match_reg(int code, char* reg);
     int translate_text(char* src, int pc);
-    int translate_bin(char* src, int pc, size_t offsets[]);
+    int translate_bin(char* src, int pc);
 
 public:
     const static int STDIN_POS  = 0;
@@ -42,7 +42,7 @@ void make_epilogue(char* dst, REGIMES regime);
 
 char* translate(const char* bin_file, REGIMES regime, size_t* res_size);
 
-void patch_on_byte(char* src, int pc, char* dst, size_t offsets[], uint32_t instr_sz, int byte_pos);
+void patch_on_byte(char* src, int pc, char* dst, size_t offsets[], size_t instr_sz, int byte_pos);
 
 void patch(char* src, int pc, size_t src_size, char* dst, size_t offsets[]);
 
