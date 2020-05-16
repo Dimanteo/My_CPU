@@ -10,9 +10,11 @@ int main(int argc, char* argv[])
         if (strcmp(argv[1], "-s") == 0)
         {
             regime = TEXT;
-        } else {
+        } else if (argc > 2) {
             printf("Incorrect translator flag: %s\n", argv[1]);
             return 1;
+        } else {
+            out_filename = argv[1];
         }
         if (argc > 2)
         {
