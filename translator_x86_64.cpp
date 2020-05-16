@@ -183,16 +183,17 @@ size_t make_prologue(char* dst, REGIMES regime, size_t offsets[])
            and control transfered to user's code. */
         uint8_t init[] = 
         {
-            0x49, 0xbd, 0x99, 0x00, 0x40, 0x00, 0x00,       // mov r13, stdIN
+            0x49, 0xbd, 0xa6, 0x00, 0x40, 0x00, 0x00,       // mov r13, stdIN
         	0x00, 0x00, 0x00, 
-        	0x49, 0xbe, 0x31, 0x01, 0x40, 0x00, 0x00,       // mov r14. stdOUT
+        	0x49, 0xbe, 0x3e, 0x01, 0x40, 0x00, 0x00,       // mov r14. stdOUT
         	0x00, 0x00, 0x00, 
-            0x48, 0x81, 0xec, 0xa0, 0x86, 0x01, 0x00, 	    // sub rsp, 100000 TODO changable size
+            0x48, 0x81, 0xec, 0x00, 0x00, 0x00, 0x00, 	    // sub rsp, RAM_SIZE
         	0x48, 0x89, 0xe5,             	                // mov rbp, rsp
         	0x9b, 0xdb, 0xe3,                               // finit
         	0xe9, 0x46, 0x01, 0x00, 0x00                    // jmp Main
         };
         size_t init_size = sizeof(init);
+        memcpy(init + 23, &RAM_SIZE, 4);                    // insert size of ram in init block
 
         size_t in_size = 0, out_size = 0;
         char* in_bin = read_file_to_buffer_alloc(STDIN_BINARY, "rb", &in_size);
@@ -213,14 +214,10 @@ size_t make_prologue(char* dst, REGIMES regime, size_t offsets[])
 void make_epilogue(char* dst, REGIMES regime)
 {
     assert(dst);
-
-    if (regime == TEXT)
-    {
-        size_t size = 0;
-        char* stdlib = read_file_to_buffer_alloc(STDTXT_FILENAME, "rb", &size);
-        strcat(dst, stdlib);
-        free(stdlib);
-    }
+    size_t size = 0;
+    char* stdlib = read_file_to_buffer_alloc(STDTXT_FILENAME, "rb", &size);
+    strcat(dst, stdlib);
+    free(stdlib);
 }
 
 char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
@@ -241,6 +238,7 @@ char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
 #endif
 
     int pc = check_source(src);
+    int entry_p = pc;
 
     char* dst = (char*)calloc(MAX_PROG_SIZE, sizeof(dst[0]));
 
@@ -252,12 +250,24 @@ char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
     {
         previous_offs = offsets[pc];
         pc = command.translate_cmd(src, pc, offsets);
-        strcat(dst, command.get_body());
+        if (regime == TEXT)
+        {
+            strcat(dst, command.get_body());
+        } else {
+            memcpy(dst + previous_offs, command.get_body(), command.get_size());
+        }
         offsets[pc] = previous_offs + command.get_size();
     }
     *dst_size = offsets[src_size];
 
-    make_epilogue(dst, regime);
+    if (regime == BINARY)
+    {
+        patch(src, entry_p, src_size, dst, offsets);
+    }
+    if (regime == TEXT)
+    {
+        make_epilogue(dst, regime);
+    }
 
     free(src);
     return dst;
@@ -272,6 +282,44 @@ void plain_print(const char* filename, const char* text)
     assert(file);
     fwrite(text, sizeof(text[0]), strlen(text), file);
     fclose(file);
+}
+
+
+void patch_on_byte(char* src, int pc, char* dst, size_t offsets[], uint32_t instr_sz, int byte_pos)
+{
+    int dst_pc = *(int*)(src + pc + 1);
+    uint32_t distance = offsets[dst_pc] - offsets[pc] - instr_sz;
+    size_t arg_offset = offsets[pc] + byte_pos;
+    memcpy(dst + arg_offset, &distance, 4);
+}
+
+
+void patch(char* src, int pc, size_t src_size, char* dst, size_t offsets[])
+{
+    for (;pc < src_size; pc++)
+    {
+        if (offsets[pc] != 0)
+        {
+            char code = src[pc];
+            switch (code)
+            {
+                case CMD_JUMP:
+                    patch_on_byte(src, pc, dst, offsets, 10, 1);
+                    break;
+                case CMD_JUMPA:
+                case CMD_JUMPAE:
+                case CMD_JUMPB:
+                case CMD_JUMPBE:
+                case CMD_JUMPE:
+                case CMD_JUMPNE:
+                    patch_on_byte(src, pc, dst, offsets, 11, 7);
+                    break;
+                case CMD_CALL:
+                    patch_on_byte(src, pc, dst, offsets, 5, 1);
+                    break;
+            }
+        }
+    }
 }
 
 
@@ -677,7 +725,6 @@ int Command_x86_64::translate_text(char* src, int pc)
 
 #define CLEARCPY\
             _size = sizeof(cmd);\
-            memset(_body, '\0', _size + 1);\
             memcpy(_body, cmd, _size);
 #define GETARGS(n)\
             nargs = n;\
@@ -1148,3 +1195,6 @@ int Command_x86_64::translate_bin(char* src, int pc, size_t offsets[])
     pc += 1 + nargs * sizeof(int);
     return pc;
 }
+
+#undef GETARGS
+#undef CLEARCPY
