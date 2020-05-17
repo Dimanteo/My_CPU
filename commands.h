@@ -42,6 +42,7 @@
     DEF_CMD(POPRAM_X, pop, SCANsample(" [%[^]]]", sarg), 1, cPUSH(cpu.RAM[cREG(arg_v[0]) / PRECISION]), getARG_REG)
     DEF_CMD(POPRAM_NX, pop, SCANsample(" [%[^]]]", sarg), 2, cPUSH(cpu.RAM[arg_v[0] + cREG(arg_v[1]) / PRECISION]), " [%d + %s]" $ *(int*)(pc + 1) $ translate_code(*(int*)(pc + 1) + 1))
     DEF_CMD(POPRAM_XN, pop, SCANsample(" [%[^]]]", sarg), 2, cPUSH(cpu.RAM[arg_v[1] + cREG(arg_v[0]) / PRECISION]), " [%s + %d]" $ translate_code(*(int*)(pc + 1)) $ *((int*)(pc + 1) + 1))
+    DEF_CMD(POWER, pow, /*scanf_sample*/ , 0, double power = (double)cPOP / PRECISION; double base = (double)cPOP / PRECISION; cPUSH(pow(base, power) * PRECISION), /*disasm_print*/)
 
 #undef $
 #undef getARG

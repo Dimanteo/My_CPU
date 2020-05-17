@@ -754,6 +754,40 @@ int Command_x86_64::translate_text(char* src, int pc)
                 args[1]);
             break;
         }
+        case CMD_POWER:
+        {
+            nargs = 0;
+            sprintf(LBL
+                "; POW\n"
+                "\tpush 1000\n"
+                "\tpush 1\n"
+                "\tfild qword [rsp]\n"
+                "\tfild qword [rsp+8]\n"
+                "\tfild qword [rsp+16]\n"
+                "\tfdivr\n"
+                "\tfild qword [rsp+8]\n"
+                "\tfild qword [rsp+24]\n"
+                "\tfdivr\n"
+                "\tadd rsp, 24\n"
+                "\tfyl2x\n"
+                "\tfst qword [rsp]\n"
+                "\tfld qword [rsp]\n"
+                "\tfrndint\n"
+                "\tfxch st1\n"
+                "\tfprem\n"
+                "\tf2xm1\n"
+                "\tfadd st0, st2\n\n"
+                "\tfscale\n"
+                "\tpush 1000\n"
+                "\tfild qword [rsp]\n"
+                "\tadd rsp, 8\n"
+                "\tfmul\n"
+                "\tfistp qword [rsp]\n"
+                "\tffree st1\n"
+                "\tffree st0\n",
+                label);
+            break;
+        }
     }
 
     assert(nargs != -1);
@@ -1235,6 +1269,41 @@ pop r8
                 0x50                                                // push rax
             };
             memcpy(cmd + 15, &number, 4);
+            CLEARCPY
+            break;
+        }
+        case CMD_POWER:
+        {
+            nargs = 0;
+            uint8_t cmd[] = 
+            {
+                0x68, 0xe8, 0x03, 0x00, 0x00,   // push   1000
+                0x6a, 0x01,              	    // push   1
+                0xdf, 0x2c, 0x24,          	    // fild   QWORD PTR [rsp]
+                0xdf, 0x6c, 0x24, 0x08,         // fild   QWORD PTR [rsp+0x8]
+                0xdf, 0x6c, 0x24, 0x10,         // fild   QWORD PTR [rsp+0x10]
+                0xde, 0xf1,          	        // fdivp  st(1),st
+                0xdf, 0x6c, 0x24, 0x08,         // fild   QWORD PTR [rsp+0x8]
+                0xdf, 0x6c, 0x24, 0x18,         // fild   QWORD PTR [rsp+0x18]
+            	0xde, 0xf1,             	    // fdivp  st(1),st
+            	0x48, 0x83, 0xc4, 0x18,         // add    rsp,0x18
+            	0xd9, 0xf1,           	        // fyl2x  
+            	0xdd, 0x14, 0x24,             	// fst    QWORD PTR [rsp]
+            	0xdd, 0x04, 0x24,             	// fld    QWORD PTR [rsp]
+            	0xd9, 0xfc,           	        // frndint 
+            	0xd9, 0xc9,           	        // fxch   st(1)
+            	0xd9, 0xf8,           	        // fprem  
+            	0xd9, 0xf0,           	        // f2xm1  
+            	0xd8, 0xc2,          	        // fadd   st,st(2)
+            	0xd9, 0xfd,           	        // fscale 
+            	0x68, 0xe8, 0x03, 0x00, 0x00,   // push   1000
+            	0xdf, 0x2c, 0x24,             	// fild   QWORD PTR [rsp]
+            	0x48, 0x83, 0xc4, 0x08,         // add    rsp,8
+            	0xde, 0xc9,             	    // fmulp  st(1),st
+            	0xdf, 0x3c, 0x24,             	// fistp  QWORD PTR [rsp]
+            	0xdd, 0xc1,           	        // ffree  st(1)
+            	0xdd, 0xc0,           	        // ffree  st(0)
+            };
             CLEARCPY
             break;
         }
