@@ -93,13 +93,13 @@ out
 ret
 
 discriminant:
+push bx
+push bx
+mul
 push 4
 push ax
 mul
 push cx
-mul
-push bx
-push bx
 mul
 sub
 pop dx
@@ -135,11 +135,11 @@ out
 ret
 
 d_greater0:
-push dx
-sqr
 push bx
 push -1
 mul
+push dx
+sqr
 sub
 push ax
 div
