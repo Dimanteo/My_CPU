@@ -430,8 +430,8 @@ int Command_x86_64::translate_text(char* src, int pc)
                 "; SUB\n"
                 "\tpop rsi\n"
                 "\tpop rdi\n"
-                "\tsub rsi, rdi\n"
-                "\tpush rsi\n",
+                "\tsub rdi, rsi\n"
+                "\tpush rdi\n",
                 label);
                 break;
         }
@@ -626,9 +626,8 @@ int Command_x86_64::translate_text(char* src, int pc)
             sprintf(LBL
                 "; PUSHRAM\n"
                 "\tpop rax\n"
-                "\tmov qword [rbp + %d * %d], rax\n",
+                "\tmov qword [rbp + 8 * %d], rax\n",
                 label,
-                sizeof(int),
                 args[0]);
             break;
         }
@@ -637,10 +636,9 @@ int Command_x86_64::translate_text(char* src, int pc)
             GETARGS(1)
             sprintf(LBL
                 "; POPRAM\n"
-                "\tmov rax, [rbp + %d * %d]\n"
+                "\tmov rax, [rbp + 8 * %d]\n"
                 "\tpush rax\n",
                 label,
-                sizeof(int),
                 args[0]);
             break;
         }
@@ -655,10 +653,9 @@ int Command_x86_64::translate_text(char* src, int pc)
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
                 "\tpop rbx\n"
-                "\tmov qword [rbp + %d * rax], rbx\n",
+                "\tmov qword [rbp + 8 * rax], rbx\n",
                 label,
-                reg,
-                sizeof(int));
+                reg);
             break;
         }
         case CMD_POPRAM_X:
@@ -671,14 +668,13 @@ int Command_x86_64::translate_text(char* src, int pc)
                 "\tmov rax, %s\n"
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
-                "\tmov rax, qword [rbp + %d * rax]\n"
+                "\tmov rax, qword [rbp + 8 * rax]\n"
                 "\tpush rax\n",
                 label,
-                reg,
-                sizeof(int));
+                reg);
             break;
         }
-        case CMD_PUSHRAM_NX:
+        case CMD_POPRAM_NX:
         {
             GETARGS(2)
             char reg[4] = {0};
@@ -689,15 +685,13 @@ int Command_x86_64::translate_text(char* src, int pc)
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
                 "\tpop rbx\n"
-                "\tmov qword [rbp + %d * rax + %d * %d], rbx\n",
+                "\tmov qword [rbp + 8 * rax + 8 * %d], rbx\n",
                 label,
                 reg,
-                sizeof(int),
-                sizeof(int),
                 args[0]);
             break;
         }
-        case CMD_PUSHRAM_XN:
+        case CMD_POPRAM_XN:
         {
             GETARGS(2)
             char reg[4] = {0};
@@ -708,15 +702,13 @@ int Command_x86_64::translate_text(char* src, int pc)
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
                 "\tpop rbx\n"
-                "\tmov qword [rbp + %d * rax + %d * %d], rbx\n",
+                "\tmov qword [rbp + 8 * rax + 8 * %d], rbx\n",
                 label,
                 reg,
-                sizeof(int),
-                sizeof(int),
                 args[1]);
             break;
         }
-        case CMD_POPRAM_NX:
+        case CMD_PUSHRAM_NX:
         {
             GETARGS(2)
             char reg[4] = {0};
@@ -726,16 +718,14 @@ int Command_x86_64::translate_text(char* src, int pc)
                 "\tmov rax, %s\n"
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
-                "\tmov rax, [rbp + %d * rax + %d * %d]\n"
+                "\tmov rax, [rbp + 8 * rax + 8 * %d]\n"
                 "\tpush rax\n",
                 label,
                 reg,
-                sizeof(int),
-                sizeof(int),
                 args[0]);
             break;
         }
-        case CMD_POPRAM_XN:
+        case CMD_PUSHRAM_XN:
         {
             GETARGS(2)
             char reg[4] = {0};
@@ -745,11 +735,9 @@ int Command_x86_64::translate_text(char* src, int pc)
                 "\tmov rax, %s\n"
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
-                "\tmov rax, [rbp+ %d * rax + %d * %d]\n"
+                "\tmov rax, [rbp+ 8 * rax + 8 * %d]\n"
                 "\tpush rax\n",
                 label,
-                sizeof(int),
-                sizeof(int),
                 reg,
                 args[1]);
             break;
@@ -886,8 +874,8 @@ int Command_x86_64::translate_bin(char* src, int pc)
             {
                 0x5e,               // pop rsi
                 0x5f,               // pop rdi
-                0x48, 0x29, 0xfe,   // sub rdi, rsi
-                0x56                // push rdi
+                0x48, 0x29, 0xf7,   // sub rdi, rsi
+                0x57                // push rdi
             };
             CLEARCPY;
             break;
@@ -1112,6 +1100,7 @@ pop r8
                 0x58,                                       // pop rax
                 0x48, 0x89, 0x85, 0x00, 0x00, 0x00, 0x00    // mov qword [rbp + Const], rax
             };
+            argv[0] *= 8;
             memcpy(cmd + 4, (uint8_t*)argv, 4);
             CLEARCPY
             break;
@@ -1121,9 +1110,10 @@ pop r8
             GETARGS(1)
             uint8_t cmd[] =
             {
-                0x48, 0x8b, 0x85, 0x00, 0x00, 0x00, 0x00,   // mov rax, [rbp + Const]
+                0x48, 0x8b, 0x85, 0x00, 0x00, 0x00, 0x00,   // mov rax, qword [rbp + Const]
                 0x50                                        // push rax
             };
+            argv[0] *= 8;
             memcpy(cmd + 3, (uint8_t*)argv, 4);
             CLEARCPY
             break;
@@ -1153,7 +1143,7 @@ pop r8
                 0xbb, 0xe8, 0x03, 0x00, 0x00,   // mov rbx, 1000
                 0x48, 0xf7, 0xf3,               // div rbx
                 0x5b,                           // pop rbx
-                0x48, 0x89, 0x5c, 0x85, 0x00    // mov qword [rbp + 4 * rax], rbx
+                0x48, 0x89, 0x5c, 0xc5, 0x00    // mov qword [rbp + 8 * rax], rbx
             };
             CLEARCPY
             break;
@@ -1182,51 +1172,9 @@ pop r8
                 0x4c, 0x89, reg,                // mov rax, Reg
                 0xbb, 0xe8, 0x03, 0x00, 0x00,   // mov rbx, 1000
                 0x48, 0xf7, 0xf3,               // div rbx
-                0x48, 0x8b, 0x44, 0x85, 0x00,   // mov rax, qword [rbp + 4 * rax]
+                0x48, 0x8b, 0x44, 0xc5, 0x00,   // mov rax, qword [rbp + 8 * rax]
                 0x50                            // push rax
             };
-            CLEARCPY
-            break;
-        }
-        case CMD_PUSHRAM_NX:
-        case CMD_PUSHRAM_XN:
-        {
-            GETARGS(2)
-            int number = 0;
-            int reg_code = 0;
-            uint8_t reg = 0;
-            if (code == CMD_PUSHRAM_NX)
-            {
-                number = argv[0];
-                reg_code = argv[1];
-            } else {
-                number = argv[1];
-                reg_code = argv[0];
-            }
-            switch(reg_code)
-            {
-                case AX:
-                    reg = 0xc0;
-                    break;
-                case BX:
-                    reg = 0xc8;
-                    break;
-                case CX:
-                    reg = 0xd0;
-                    break;
-                case DX:
-                    reg = 0xd8;
-                    break;
-            }
-            uint8_t cmd[] =
-            {
-                0x4c, 0x89, reg,                                // mov rax, Reg
-                0xbb, 0xe8, 0x03, 0x00, 0x00,                   // mov rbx, 1000
-                0x48, 0xf7, 0xf3,                               // div rbx
-                0x5b,                                           // pop rbx
-                0x48, 0x89, 0x9c, 0x85, 0x00, 0x00, 0x00, 0x00  // mov qword [rbp + 4 * rax + Const], rbx
-            };
-            memcpy(cmd + 16, &number, 4);
             CLEARCPY
             break;
         }
@@ -1262,10 +1210,52 @@ pop r8
             }
             uint8_t cmd[] =
             {
+                0x4c, 0x89, reg,                                // mov rax, Reg
+                0xbb, 0xe8, 0x03, 0x00, 0x00,                   // mov rbx, 1000
+                0x48, 0xf7, 0xf3,                               // div rbx
+                0x5b,                                           // pop rbx
+                0x48, 0x89, 0x9c, 0xc5, 0x00, 0x00, 0x00, 0x00  // mov qword [rbp + 8 * rax + Const], rbx
+            };
+            memcpy(cmd + 16, &number, 4);
+            CLEARCPY
+            break;
+        }
+        case CMD_PUSHRAM_NX:
+        case CMD_PUSHRAM_XN:
+        {
+            GETARGS(2)
+            int number = 0;
+            int reg_code = 0;
+            uint8_t reg = 0;
+            if (code == CMD_PUSHRAM_NX)
+            {
+                number = argv[0];
+                reg_code = argv[1];
+            } else {
+                number = argv[1];
+                reg_code = argv[0];
+            }
+            switch(reg_code)
+            {
+                case AX:
+                    reg = 0xc0;
+                    break;
+                case BX:
+                    reg = 0xc8;
+                    break;
+                case CX:
+                    reg = 0xd0;
+                    break;
+                case DX:
+                    reg = 0xd8;
+                    break;
+            }
+            uint8_t cmd[] =
+            {
                 0x4c, 0x89, reg,                                    // mov rax, Reg
                 0xbb, 0xe8, 0x03, 0x00, 0x00,                       // mov rbx, 1000
                 0x48, 0xf7, 0xf3,                                   // div rbx
-                0x48, 0x8b, 0x84, 0x85, 0x00, 0x00, 0x00, 0x00,     // mov rax, [rbp + 4 * rax + Const]
+                0x48, 0x8b, 0x84, 0xc5, 0x00, 0x00, 0x00, 0x00,     // mov rax, [rbp + 8 * rax + Const]
                 0x50                                                // push rax
             };
             memcpy(cmd + 15, &number, 4);
