@@ -1,7 +1,8 @@
 #include "cassert"
 #include <cmath>
 
-#define NO_HASH
+//#define NDEBUG
+//#define NO_HASH
 //#define OK_DUMP
 #include "linker.h"
 #include "My_Headers/protected_stack.h"

@@ -4,7 +4,7 @@
 #include "My_Headers/txt_files.h"
 #include "My_Headers/elf_maker.h"
 
-enum REGIMES {TEXT = 's', BINARY = 0};
+enum MODES {TEXT = 's', BINARY = 0};
 
 /**
  *Contains binary and text representation for single x86_64 intstruction.
@@ -14,7 +14,7 @@ class Command_x86_64
 private:
     char*     _body;
     size_t    _size;
-    REGIMES   _regime;
+    MODES     _mode;
 
     void make_label(int pc, char* label);
     void get_args(char* operand, int* buff, int nargs);
@@ -26,7 +26,7 @@ public:
     const static int STDIN_POS  = 0;
     const static int STDOUT_POS = 1;
 
-    Command_x86_64(REGIMES regime);
+    Command_x86_64(MODES mode);
     int translate_cmd(char* src, int pc, size_t offsets[]);
     char* get_body();
     size_t get_size();
@@ -36,11 +36,11 @@ public:
 
 int check_source(char* buffer);
 
-size_t make_prologue(char* dst, REGIMES regime, size_t offsets[]);
+size_t make_prologue(char* dst, MODES mode, size_t offsets[]);
 
-void make_epilogue(char* dst, REGIMES regime);
+void make_epilogue(char* dst, MODES mode);
 
-char* translate(const char* bin_file, REGIMES regime, size_t* res_size);
+char* translate(const char* bin_file, MODES mode, size_t* res_size);
 
 void patch_on_byte(char* src, int pc, char* dst, size_t offsets[], size_t instr_sz, int byte_pos);
 

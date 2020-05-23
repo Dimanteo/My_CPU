@@ -3,13 +3,13 @@
 
 int main(int argc, char* argv[])
 {
-    REGIMES regime = BINARY;
+    MODES mode = BINARY;
     char* out_filename = "b.out";
     if (argc > 1)
     {
         if (strcmp(argv[1], "-s") == 0)
         {
-            regime = TEXT;
+            mode = TEXT;
         } else if (argc > 2) {
             printf("Incorrect translator flag: %s\n", argv[1]);
             return 1;
@@ -23,10 +23,10 @@ int main(int argc, char* argv[])
     }
 
     size_t res_size = 0;
-    char* result = translate(BIN_FILE_NAME, regime, &res_size);
+    char* result = translate(BIN_FILE_NAME, mode, &res_size);
     assert(result);
     
-    if (regime == TEXT)
+    if (mode == TEXT)
     {
         plain_print(out_filename, result);
     } else {
@@ -50,11 +50,11 @@ int main(int argc, char* argv[])
 //////////////////// Command_x86_64 properties //////////////////////
 
 
-Command_x86_64::Command_x86_64(REGIMES regime) : _regime(regime)
-{
-    _body = (char*)calloc(CMD_BUFF_SIZE, sizeof(_body[0]));
-    _size = 0;
-}
+Command_x86_64::Command_x86_64(MODES mode) : 
+    _mode(mode),
+    _body((char*)calloc(CMD_BUFF_SIZE, sizeof(_body[0]))),
+    _size(0)
+    {}
 
 
 Command_x86_64::~Command_x86_64() 
@@ -70,7 +70,7 @@ void Command_x86_64::dump(FILE* log_fp)
     fprintf(log_fp, "REGIME : [%d] %s\n"
                   "size   : %d\n"
                   "body\n{\n%s\n}\n",
-                  _regime, _regime == TEXT ? "TEXT" : "BINARY",
+                  _mode, _mode == TEXT ? "TEXT" : "BINARY",
                   _size, _body);
 }
 
@@ -82,7 +82,7 @@ char* Command_x86_64::get_body()
 
 size_t Command_x86_64::get_size()
 {
-    if (_regime == BINARY)
+    if (_mode == BINARY)
     {
         return _size;
     } else {
@@ -115,7 +115,7 @@ void Command_x86_64::match_reg(int code, char* reg)
 {
     assert(reg);
 
-    if (_regime == TEXT)
+    if (_mode == TEXT)
     {
         switch (code)
         {
@@ -146,7 +146,7 @@ int Command_x86_64::translate_cmd(char* src, int pc, size_t offsets[])
     assert(src);
     assert(offsets);
 
-    if (_regime == TEXT)
+    if (_mode == TEXT)
     {
         pc = translate_text(src, pc);
     } else {
@@ -175,7 +175,7 @@ void plain_print(const char* filename, const char* text)
 }
 
 
-void make_epilogue(char* dst, REGIMES regime)
+void make_epilogue(char* dst, MODES mode)
 {
     assert(dst);
     size_t size = 0;
@@ -255,12 +255,12 @@ int check_source(char* buff)
 }
 
 
-size_t make_prologue(char* dst, REGIMES regime, size_t offsets[])
+size_t make_prologue(char* dst, MODES mode, size_t offsets[])
 {
     assert(dst);
     assert(offsets);
 
-    if (regime == TEXT)
+    if (mode == TEXT)
     {
         time_t now = time(nullptr);
         sprintf(dst, 
@@ -309,7 +309,7 @@ size_t make_prologue(char* dst, REGIMES regime, size_t offsets[])
 }
 
 
-char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
+char* translate(const char* bin_file, MODES mode, size_t* dst_size)
 {
     assert(bin_file);
     assert(dst_size);
@@ -331,15 +331,15 @@ char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
 
     char* dst = (char*)calloc(MAX_PROG_SIZE, sizeof(dst[0]));
 
-    offsets[pc] = make_prologue(dst, regime, offsets);        // put stdIN offset in [0] and stdOUT in [1]
+    offsets[pc] = make_prologue(dst, mode, offsets);        // put stdIN offset in [0] and stdOUT in [1]
 
-    Command_x86_64 command(regime);
+    Command_x86_64 command(mode);
     int previous_offs = 0;
     while (pc < src_size)
     {
         previous_offs = offsets[pc];
         pc = command.translate_cmd(src, pc, offsets);
-        if (regime == TEXT)
+        if (mode == TEXT)
         {
             strcat(dst, command.get_body());
         } else {
@@ -349,13 +349,13 @@ char* translate(const char* bin_file, REGIMES regime, size_t* dst_size)
     }
     *dst_size = offsets[src_size];
 
-    if (regime == BINARY)
+    if (mode == BINARY)
     {
         patch(src, entry_p, src_size, dst, offsets);
     }
-    if (regime == TEXT)
+    if (mode == TEXT)
     {
-        make_epilogue(dst, regime);
+        make_epilogue(dst, mode);
     }
 
     free(src);
@@ -650,6 +650,7 @@ int Command_x86_64::translate_text(char* src, int pc)
             sprintf(LBL
                 "; PUSHRAM_X\n"
                 "\tmov rax, %s\n"
+                "\txor rdx, rdx\n"
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
                 "\tpop rbx\n"
@@ -666,6 +667,7 @@ int Command_x86_64::translate_text(char* src, int pc)
             sprintf(LBL
                 "; POPRAM_X\n"
                 "\tmov rax, %s\n"
+                "\txor rdx, rdx\n"
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
                 "\tmov rax, qword [rbp + 8 * rax]\n"
@@ -680,8 +682,9 @@ int Command_x86_64::translate_text(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[1], reg);
             sprintf(LBL
-                "; PUSHRAM_NX\n"
+                "; POPRAM_NX\n"
                 "\tmov rax, %s\n"
+                "\txor rdx, rdx\n"
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
                 "\tpop rbx\n"
@@ -697,8 +700,9 @@ int Command_x86_64::translate_text(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[0], reg);
             sprintf(LBL
-                "; PUSHRAM_XN\n"
+                "; POPRAM_XN\n"
                 "\tmov rax, %s\n"
+                "\txor rdx, rdx\n"
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
                 "\tpop rbx\n"
@@ -714,8 +718,9 @@ int Command_x86_64::translate_text(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[1], reg);
             sprintf(LBL
-                "; POPRAM NX\n"
+                "; PUSHRAM_NX\n"
                 "\tmov rax, %s\n"
+                "\txor rdx, rdx\n"
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
                 "\tmov rax, [rbp + 8 * rax + 8 * %d]\n"
@@ -731,8 +736,9 @@ int Command_x86_64::translate_text(char* src, int pc)
             char reg[4] = {0};
             match_reg(args[0], reg);
             sprintf(LBL
-                "; POPRAM_XN\n"
+                "; PUSHRAM_XN\n"
                 "\tmov rax, %s\n"
+                "\txor rdx, rdx\n"
                 "\tmov rbx, 1000\n"
                 "\tdiv rbx\n"
                 "\tmov rax, [rbp+ 8 * rax + 8 * %d]\n"
@@ -785,7 +791,7 @@ int Command_x86_64::translate_text(char* src, int pc)
 }
 
 #undef LBL 
-#undef GETARGS(n)
+#undef GETARGS
 
 
 #define CLEARCPY\
@@ -1140,6 +1146,7 @@ pop r8
             uint8_t cmd[] =
             {
                 0x4c, 0x89, reg,                // mov rax, Reg
+                0x48, 0x31, 0xd2,               // xor rdx, rdx
                 0xbb, 0xe8, 0x03, 0x00, 0x00,   // mov rbx, 1000
                 0x48, 0xf7, 0xf3,               // div rbx
                 0x5b,                           // pop rbx
@@ -1170,6 +1177,7 @@ pop r8
             uint8_t cmd[] =
             {
                 0x4c, 0x89, reg,                // mov rax, Reg
+                0x48, 0x31, 0xd2,               // xor rdx, rdx
                 0xbb, 0xe8, 0x03, 0x00, 0x00,   // mov rbx, 1000
                 0x48, 0xf7, 0xf3,               // div rbx
                 0x48, 0x8b, 0x44, 0xc5, 0x00,   // mov rax, qword [rbp + 8 * rax]
@@ -1211,12 +1219,15 @@ pop r8
             uint8_t cmd[] =
             {
                 0x4c, 0x89, reg,                                // mov rax, Reg
+                0x48, 0x31, 0xd2,                               // xor rdx, rdx
                 0xbb, 0xe8, 0x03, 0x00, 0x00,                   // mov rbx, 1000
                 0x48, 0xf7, 0xf3,                               // div rbx
                 0x5b,                                           // pop rbx
                 0x48, 0x89, 0x9c, 0xc5, 0x00, 0x00, 0x00, 0x00  // mov qword [rbp + 8 * rax + Const], rbx
             };
-            memcpy(cmd + 16, &number, 4);
+            int mov_arg_offset = 19;
+            number *= 8;
+            memcpy(cmd + mov_arg_offset, &number, 4);
             CLEARCPY
             break;
         }
@@ -1253,12 +1264,15 @@ pop r8
             uint8_t cmd[] =
             {
                 0x4c, 0x89, reg,                                    // mov rax, Reg
+                0x48, 0x31, 0xd2,                                   // xor rdx, rdx
                 0xbb, 0xe8, 0x03, 0x00, 0x00,                       // mov rbx, 1000
                 0x48, 0xf7, 0xf3,                                   // div rbx
                 0x48, 0x8b, 0x84, 0xc5, 0x00, 0x00, 0x00, 0x00,     // mov rax, [rbp + 8 * rax + Const]
                 0x50                                                // push rax
             };
-            memcpy(cmd + 15, &number, 4);
+            int mov_arg_offset = 18;
+            number *= 8;
+            memcpy(cmd + mov_arg_offset, &number, 4);
             CLEARCPY
             break;
         }
