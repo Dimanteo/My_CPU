@@ -33,6 +33,7 @@ const char ELF_MAKER_LOG[]          = "Debug/elf_maker.log";        // ELF file 
 size_t MAX_PROG_SIZE = 10000000;
 size_t CMD_BUFF_SIZE = 1000;
 
+constexpr size_t NREGS = 4;
 enum REG_CODE {
     AX = 0,
     BX = 1,

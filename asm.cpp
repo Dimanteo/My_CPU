@@ -4,7 +4,7 @@
 #include "linker.h"
 #include "Parser.h"
 
-const size_t MAX_NAMES_COUNT = 1004;
+const size_t MAX_NAMES_COUNT = 1000 + NREGS;
 
 struct Mark {
     int code = -2;
@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
             {CX, "cx"},
             {DX, "dx"}
     };
-    int names_number = 4;
+    int names_number = NREGS;
 
     //транслируем команды
     size_t size_bin = sizeof(SIGNATURE) + sizeof(VERSION);
