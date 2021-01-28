@@ -234,27 +234,6 @@ void patch(char* src, int pc, size_t src_size, char* dst, size_t offsets[])
 ///////////////////////////////// General translation functions ////////////////////////////////
 
 
-int check_source(char* buff)
-{
-    assert(buff);
-
-    int pc = 0;
-    int signature = *(int*)buff;
-    if (signature != SIGNATURE) {
-        fprintf(stderr, "ERROR in translator. Signature mismatch.\nExpected: %d\nGot: %d\n", SIGNATURE, signature);
-        assert(signature == SIGNATURE);
-    }
-    pc += sizeof(SIGNATURE);
-
-    char version = buff[pc];
-    if (version != VERSION) {
-        fprintf(stderr, "ERROR in translator. Version mismatch.\n File VERSION: %d.\nProgram VERSION: %d.\n Recompile bin and restart program.\n", version, VERSION);
-        assert(version == VERSION);
-    }
-    return ++pc;
-}
-
-
 size_t make_prologue(char* dst, MODES mode, size_t offsets[])
 {
     assert(dst);
@@ -326,7 +305,7 @@ char* translate(const char* bin_file, MODES mode, size_t* dst_size)
     fclose(log_file);
 #endif
 
-    int pc = check_source(src);
+    int pc = check_binary_source(src);
     int entry_p = pc;
 
     char* dst = (char*)calloc(MAX_PROG_SIZE, sizeof(dst[0]));

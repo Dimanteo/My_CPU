@@ -1,5 +1,4 @@
 #include "LLVM_IR.hpp"
-#include "../My_Headers/txt_files.h"
 
 int main(int argc, char* argv[])
 {
@@ -28,12 +27,14 @@ int main(int argc, char* argv[])
 
     size_t code_size = 0;
     char *binary = read_file_to_buffer_alloc(argv[1], "rb", &code_size);
-    char *pc = binary;
+    int code_offs = check_binary_source(binary);
+    char *pc = binary + code_offs;
 
     CPU cpu = {"IR CPU"};
     cpu_init(&cpu);
 
     cpu.run = true;
+    std::cout << "## [C++ Interpretation] ##\n";
 
     while (cpu.run)
     {
@@ -56,7 +57,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    pc = binary;
+    pc = binary + code_offs;
 
     llvm::FunctionType *calleType = llvm::FunctionType::get(builder.getVoidTy(),
                                         llvm::ArrayRef<llvm::Type*>({builder.getInt8PtrTy(), builder.getInt8PtrTy()}), false);
@@ -71,8 +72,21 @@ int main(int argc, char* argv[])
 
     builder.CreateRetVoid();
 
-    llvm::ExecutionEngine *ee = llvm::EngineBuilder(std::unique_ptr<llvm::Module>(&module)).create();
+    std::cout << "## [LLVM IR] DUMP ##\n";
 
+    std::string ir_str;
+    llvm::raw_string_ostream ir_os(ir_str);
+    module.print(ir_os, nullptr);
+    ir_os.flush();
+    std::cout << ir_str;
+
+    std::cout << "## [LLVM EE] RUN ##\n";
+
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+
+    llvm::ExecutionEngine *ee = llvm::EngineBuilder(std::unique_ptr<llvm::Module>(&module)).create();
+    ee->InstallLazyFunctionCreator(lazyFunctionCreator);
     ee->finalizeObject();
 
     std::vector<llvm::GenericValue> noargs;

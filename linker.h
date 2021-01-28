@@ -22,7 +22,7 @@ const char DISASM_OUTPUT_FILENAME[] = "Output/disasm.out";          // DisAsm ou
 const char CPU_LOG_NAME[]           = "Debug/CPU.log";              // File with CPU debug info
 const char CPU_OUT_FILE[]           = "Output/CPU.out";             // CPU output file
 const char STACK_LOG_NAME[]         = "Debug/Stack.log";            // CPU Stack debug info file
-const char DEFAULT_STACK_LOG_NAME[] = "Stack.log";                  // Predefined stack debug info file
+//const char DEFAULT_STACK_LOG_NAME[] = "Stack.log";                  // Predefined stack debug info file
 //translator
 const char STDTXT_FILENAME[]        = "iostd.s";                    // In/out functions assembly code.
 const char STDIN_BINARY[]           = "stdIN";                      // Binary input function
@@ -30,8 +30,8 @@ const char STDOUT_BINARY[]          = "stdOUT";                     // Binary ou
 const char TRANSLATOR_LOG[]         = "Debug/Trans.log";            // Translator debug info file
 const char ELF_MAKER_LOG[]          = "Debug/elf_maker.log";        // ELF file generator log
 
-size_t MAX_PROG_SIZE = 10000000;
-size_t CMD_BUFF_SIZE = 1000;
+static const size_t MAX_PROG_SIZE = 10000000;
+static const size_t CMD_BUFF_SIZE = 1000;
 
 constexpr size_t NREGS = 4;
 enum REG_CODE {
@@ -45,4 +45,27 @@ enum REG_CODE {
         #include "commands.h"
     };
 #undef DEF_CMD
+
+static int check_binary_source(char* buff)
+{
+    assert(buff);
+
+    int pc = 0;
+    int signature = *(int*)buff;
+    if (signature != SIGNATURE) {
+        fprintf(stderr, "ERROR in translator. Signature mismatch.\nExpected: %d\nGot: %d\n", SIGNATURE, signature);
+        assert(signature == SIGNATURE);
+        return -1;
+    }
+    pc += sizeof(SIGNATURE);
+
+    char version = buff[pc];
+    if (version != VERSION) {
+        fprintf(stderr, "ERROR in translator. Version mismatch.\n File VERSION: %d.\nProgram VERSION: %d.\n Recompile bin and restart program.\n", version, VERSION);
+        assert(version == VERSION);
+        return -1;
+    }
+    return ++pc;
+}
+
 #endif
