@@ -66,6 +66,11 @@ int main(int argc, char* argv[])
     for (size_t inst = 0; inst < code_size; inst++)
     {
         CMD_CODE code = static_cast<CMD_CODE>(*(pc + inst));
+        if (code == CMD_END)
+        {
+            builder.CreateRetVoid();
+            continue;
+        }
         llvm::Value *inst_ptr = llvm::ConstantInt::get(builder.getInt64Ty(), reinterpret_cast<uint64_t>(pc + inst));
         builder.CreateCall(module.getOrInsertFunction(cmd_code_to_func[code], calleType), llvm::ArrayRef<llvm::Value*>({cpu_ptr, inst_ptr}));
     }
@@ -92,6 +97,8 @@ int main(int argc, char* argv[])
     std::vector<llvm::GenericValue> noargs;
     cpu.run = true;
     ee->runFunction(mainFunc, noargs);
+
+    std::cout << "## [LLVM EE] END ##\n";
 
     cpu_destruct(&cpu);
     free(binary);
