@@ -121,9 +121,10 @@ char *read_file_to_buffer_alloc(const char name[], const char mode[], size_t* si
 
     size_t new_size = fread(buffer, sizeof(buffer[0]), *size, fin);
     if (*size != new_size) {
-        char* new_buf = (char*)realloc(buffer, *size + 1);
+        char* new_buf = (char*)realloc(buffer, new_size);
         if (new_buf != NULL) {
             buffer = new_buf;
+            *size = new_size;
         }
     }
     fclose(fin);

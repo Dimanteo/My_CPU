@@ -337,7 +337,8 @@ void stack_destruct(Stack_t* stack) {
     stack->buf_hash = 0;
     free(stack->buffer);
     stack->buffer = nullptr;
-    fclose(stack->log);
+    if (stack->log != nullptr)
+        fclose(stack->log);
 }
 
 FILE* stack_reopen_log(Stack_t *stack, const char *name /*= DEFAULT_STACK_LOG_NAME*/, const char *mode /*= "ab"*/) {

@@ -49,7 +49,6 @@ void cpu_destruct(CPU *cpu) {
     cpu->cpu_canary1 = 0;
 
     stack_destruct(&cpu->stack);
-
     cpu->reg[AX] = 0;
     cpu->reg[BX] = 0;
     cpu->reg[CX] = 0;
