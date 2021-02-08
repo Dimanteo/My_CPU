@@ -63,16 +63,28 @@ int main(int argc, char* argv[])
                                         llvm::ArrayRef<llvm::Type*>({builder.getInt8PtrTy(), builder.getInt8PtrTy()}), false);
     llvm::Value *cpu_ptr = llvm::ConstantInt::get(builder.getInt64Ty(), reinterpret_cast<uint64_t>(&cpu));
 
-    for (size_t inst = 0; inst < code_size; inst++)
+    for (; pc - binary < code_size; pc++)
     {
-        CMD_CODE code = static_cast<CMD_CODE>(*(pc + inst));
+        CMD_CODE code = static_cast<CMD_CODE>(*pc);
         if (code == CMD_END)
         {
             builder.CreateRetVoid();
             continue;
         }
-        llvm::Value *inst_ptr = llvm::ConstantInt::get(builder.getInt64Ty(), reinterpret_cast<uint64_t>(pc + inst));
+        llvm::Value *inst_ptr = llvm::ConstantInt::get(builder.getInt64Ty(), reinterpret_cast<uint64_t>(pc));
         builder.CreateCall(module.getOrInsertFunction(cmd_code_to_func[code], calleType), llvm::ArrayRef<llvm::Value*>({cpu_ptr, inst_ptr}));
+
+        switch(code)
+        {
+            #define DEF_CMD(CMD_name, token, scanf_sample, number_of_args, instructions, disasm_print) \
+                case CMD_##CMD_name: \
+                    pc += number_of_args * sizeof(int); \
+                    break;
+
+            #include "../commands.h"
+
+            #undef DEF_CMD
+        }
     }
 
     builder.CreateRetVoid();
