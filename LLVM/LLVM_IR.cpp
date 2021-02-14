@@ -21,9 +21,9 @@ int main(int argc, char* argv[])
         llvm::FunctionType::get(builder.getVoidTy(), false);
     llvm::Function *mainFunc = 
         llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module);
-    llvm::BasicBlock* startBB = llvm::BasicBlock::Create(context, "start", mainFunc);
+    llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "start", mainFunc);
 
-    builder.SetInsertPoint(startBB);
+    builder.SetInsertPoint(entry);
 
     size_t code_size = 0;
     char *binary = read_file_to_buffer_alloc(argv[1], "rb", &code_size);
@@ -33,27 +33,30 @@ int main(int argc, char* argv[])
     CPU cpu = {"IR CPU"};
     cpu_init(&cpu);
 
-    cpu.run = true;
-    std::cout << "## [C++ Interpretation] ##\n";
-
-    while (cpu.run)
+    std::unordered_map<char*, llvm::BasicBlock*> addr_to_block;
+    for (; pc - binary < code_size; pc++)
     {
-        switch (*pc)
+        CMD_CODE code = static_cast<CMD_CODE>(*pc);
+
+        if (code == CMD_JUMP) 
+        {
+            int dest = *(int*)(pc + 1);
+            char* next_pc = pc + 1 + sizeof(int);
+            size_t next_insn =  next_pc  - binary;
+            addr_to_block.insert({binary + dest, llvm::BasicBlock::Create(context, std::to_string(dest), mainFunc)});
+            addr_to_block.insert({next_pc, llvm::BasicBlock::Create(context, std::to_string(next_insn), mainFunc)});
+        }
+
+        switch(code)
         {
             #define DEF_CMD(CMD_name, token, scanf_sample, number_of_args, instructions, disasm_print) \
                 case CMD_##CMD_name: \
-                    do_##CMD_name(&cpu, pc); \
-                    pc += 1 + number_of_args * sizeof(int);\
+                    pc += number_of_args * sizeof(int); \
                     break;
 
             #include "../commands.h"
 
             #undef DEF_CMD
-
-            default:
-                fprintf(stderr, "Illegal instrunction.\n");
-                do_END(&cpu, pc);
-                break;
         }
     }
 
@@ -66,14 +69,36 @@ int main(int argc, char* argv[])
     for (; pc - binary < code_size; pc++)
     {
         CMD_CODE code = static_cast<CMD_CODE>(*pc);
+
         if (code == CMD_END)
         {
             builder.CreateRetVoid();
             continue;
         }
-        llvm::Value *inst_ptr = llvm::ConstantInt::get(builder.getInt64Ty(), reinterpret_cast<uint64_t>(pc));
-        builder.CreateCall(module.getOrInsertFunction(cmd_code_to_func[code], calleType), llvm::ArrayRef<llvm::Value*>({cpu_ptr, inst_ptr}));
 
+        auto block_it = addr_to_block.find(pc);
+        if (block_it != addr_to_block.end())
+        {
+            builder.CreateBr(block_it->second);
+            builder.SetInsertPoint(block_it->second);
+        }
+
+        switch (code)
+        {
+            case CMD_JUMP:
+            {
+                char* dest_pc = *(int*)(pc + 1) + binary;
+                builder.CreateBr(addr_to_block[dest_pc]);
+                break;
+            }
+            default:
+            {
+                llvm::Value *inst_ptr = llvm::ConstantInt::get(builder.getInt64Ty(), reinterpret_cast<uint64_t>(pc));
+                builder.CreateCall(module.getOrInsertFunction(cmd_code_to_func[code], calleType), llvm::ArrayRef<llvm::Value*>({cpu_ptr, inst_ptr}));
+                break;
+            }
+        }
+    
         switch(code)
         {
             #define DEF_CMD(CMD_name, token, scanf_sample, number_of_args, instructions, disasm_print) \
