@@ -41,10 +41,9 @@ int main(int argc, char* argv[])
         if (code == CMD_JUMP) 
         {
             int dest = *(int*)(pc + 1);
-            char* next_pc = pc + 1 + sizeof(int);
-            size_t next_insn =  next_pc  - binary;
-            addr_to_block.insert({binary + dest, llvm::BasicBlock::Create(context, std::to_string(dest), mainFunc)});
-            addr_to_block.insert({next_pc, llvm::BasicBlock::Create(context, std::to_string(next_insn), mainFunc)});
+            std::string bb = "BB";
+            addr_to_block.insert({binary + dest, llvm::BasicBlock::Create(context, bb + std::to_string(dest), mainFunc)});
+            addr_to_block.insert({pc, llvm::BasicBlock::Create(context, bb + std::to_string(pc - binary), mainFunc)});
         }
 
         switch(code)
@@ -70,14 +69,8 @@ int main(int argc, char* argv[])
     {
         CMD_CODE code = static_cast<CMD_CODE>(*pc);
 
-        if (code == CMD_END)
-        {
-            builder.CreateRetVoid();
-            continue;
-        }
-
         auto block_it = addr_to_block.find(pc);
-        if (block_it != addr_to_block.end())
+        if (block_it != addr_to_block.end() && !is_branch(code))
         {
             builder.CreateBr(block_it->second);
             builder.SetInsertPoint(block_it->second);
@@ -85,10 +78,14 @@ int main(int argc, char* argv[])
 
         switch (code)
         {
+            case CMD_END:
+                builder.CreateRetVoid();
+                break;
             case CMD_JUMP:
             {
                 char* dest_pc = *(int*)(pc + 1) + binary;
                 builder.CreateBr(addr_to_block[dest_pc]);
+                builder.SetInsertPoint(block_it->second);
                 break;
             }
             default:
@@ -112,8 +109,6 @@ int main(int argc, char* argv[])
         }
     }
 
-    builder.CreateRetVoid();
-
     std::cout << "## [LLVM IR] DUMP ##\n";
 
     std::string ir_str;
@@ -122,7 +117,7 @@ int main(int argc, char* argv[])
     ir_os.flush();
     std::cout << ir_str;
 
-    std::cout << "## [LLVM EE] RUN ##\n";
+    std::cout << "\n## [LLVM EE] RUN ##\n";
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -139,6 +134,27 @@ int main(int argc, char* argv[])
 
     cpu_destruct(&cpu);
     free(binary);
+}
+
+bool is_branch(CMD_CODE code)
+{
+    bool ret = false;
+    switch (code)
+    {
+        case CMD_JUMP:
+        case CMD_JUMPA:
+        case CMD_JUMPAE:
+        case CMD_JUMPB:
+        case CMD_JUMPBE:
+        case CMD_JUMPNE:
+        case CMD_JUMPE:
+            ret = true;
+            break;
+        default:
+            ret = false;
+            break;
+    }
+    return ret;
 }
 
 void do_END(CPU *cpu, const char* pc)

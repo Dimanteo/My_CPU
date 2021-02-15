@@ -47,3 +47,5 @@ std::unordered_map<CMD_CODE, std::string> cmd_code_to_func(
         #undef DEF_CMD
     }
 );
+
+bool is_branch(CMD_CODE code);
