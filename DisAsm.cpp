@@ -28,6 +28,7 @@ int main() {
 
 #define DEF_CMD(name, token, scanf_sample, n_args, instructions, disasm) \
             case CMD_##name:\
+            fprintf(fout, "%#6X: ", pc - bin);\
                 fprintf(fout, #token disasm);\
                 fprintf(fout, "\n");\
                 pc += 1 + sizeof(int) * n_args;\
