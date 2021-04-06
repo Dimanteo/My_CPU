@@ -1,4 +1,8 @@
+#pragma once
 #include <vector>
+#include <unordered_map>
+#include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/IRBuilder.h>
 #include "../linker.h"
 
 using word_t = int;
@@ -9,18 +13,20 @@ class Core
 {
         std::vector<word_t> m_stack;
         reg_t regFile[NREGS];
+        char *m_pc;
         word_t *m_memory;
         bool m_running;
+        std::unordered_map<size_t, llvm::BasicBlock*> m_bbCache;
 
     public:
         Core();
         ~Core();
-        void run_core(const char *entry);
+        void run(char *code, size_t codeOffset, size_t codeSz);
         void push(word_t val);
         word_t pop();
         reg_t getReg(REG_CODE regi) const;
         void setReg(REG_CODE regi);
         void read(address_t adr) const;
         void write(address_t adr);
-        void stop_core();
+        void stop();
 };
