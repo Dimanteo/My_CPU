@@ -20,33 +20,58 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
         llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module);
     llvm::BasicBlock *startBB = llvm::BasicBlock::Create(context, "start", mainFunc);
 
-    m_bbCache.insert({codeOffset, startBB});
-    builder.SetInsertPoint(startBB);
+    bblockCache.insert({codeOffset, startBB});
 
-    // Decode and generate bblock map
+    // First pass: create basic block map
     Insn insn;
     char *nextPC;
-    std::vector<Insn> decodedInsns;
+    std::vector<std::pair<size_t, Insn>> decodedInsns;
     for (char *pc = entry; pc - entry < codeSz; pc = nextPC) {
         insn.decode(pc);
-        decodedInsns.push_back(insn);
-        nextPC = pc + sizeof(char) + insn.argc() * sizeof(word_t);
+        decodedInsns.push_back({pc - code, insn});
+        nextPC = pc + insn.getSz();
         if (insn.isBranch()) {
-            // Creating new BB for jump destination
+            // Creating new basic block for jump destination
             size_t dest = insn.getArg(0);
-            if (m_bbCache.find(dest) != m_bbCache.end()) {
+            if (bblockCache.find(dest) != bblockCache.end()) {
                 llvm::BasicBlock *destBB = llvm::BasicBlock::Create(context, std::to_string(dest), mainFunc);
-                m_bbCache.insert({dest, destBB});
+                bblockCache.insert({dest, destBB});
             }
             // End current basic block and switch to new one.
             size_t offset = nextPC - code;
-            if (m_bbCache.find(offset) != m_bbCache.end()) {
+            if (bblockCache.find(offset) != bblockCache.end()) {
                 llvm::BasicBlock *nextBB = llvm::BasicBlock::Create(context, std::to_string(offset), mainFunc);
-                m_bbCache.insert({offset, nextBB});
+                bblockCache.insert({offset, nextBB});
             }
         }
     }
 
+    // Second pass: generating IR
+    for (auto pc_insn : decodedInsns) {
+        if (bblockCache.find(pc_insn.first) != bblockCache.end())
+            builder.SetInsertPoint(bblockCache[pc_insn.first]);
+        pc_insn.second.generateIR(&builder, *this);
+    }
+
+    std::cout << "## [LLVM IR] DUMP ##\n";
+
+    std::string ir_str;
+    llvm::raw_string_ostream ir_os(ir_str);
+    module.print(ir_os, nullptr);
+    ir_os.flush();
+    std::cout << ir_str;
+
+    std::cout << "\n## [LLVM EE] RUN ##\n";
+
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+
+    std::cout << "## [LLVM EE] END ##\n";
+
+    llvm::ExecutionEngine *ee = llvm::EngineBuilder(std::unique_ptr<llvm::Module>(&module)).create();
+    ee->InstallLazyFunctionCreator(lazyFunctionCreator);
+    ee->finalizeObject();
+    std::vector<llvm::GenericValue> noargs;
     m_running = true;
-    // ExecutionEngine
+    ee->runFunction(mainFunc, noargs);
 }

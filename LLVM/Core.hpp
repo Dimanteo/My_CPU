@@ -1,8 +1,15 @@
 #pragma once
 #include <vector>
 #include <unordered_map>
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/IRBuilder.h>
+#include <iostream>
+#include <llvm-10/llvm/IR/LLVMContext.h>
+#include <llvm-10/llvm/IR/Module.h>
+#include <llvm-10/llvm/IR/IRBuilder.h>
+#include <llvm-10/llvm/IR/BasicBlock.h>
+#include <llvm-10/llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm-10/llvm/ExecutionEngine/GenericValue.h>
+#include <llvm-10/llvm/Support/TargetSelect.h>
+
 #include "../linker.h"
 
 using word_t = int;
@@ -13,10 +20,10 @@ class Core
 {
         std::vector<word_t> m_stack;
         reg_t regFile[NREGS];
-        char *m_pc;
+        size_t m_pc;
         word_t *m_memory;
         bool m_running;
-        std::unordered_map<size_t, llvm::BasicBlock*> m_bbCache;
+        std::unordered_map<size_t, llvm::BasicBlock*> bblockCache;
 
     public:
         Core();

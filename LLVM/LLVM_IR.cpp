@@ -1,4 +1,6 @@
 #include "LLVM_IR.hpp"
+#include "Core.hpp"
+#include "Instruction.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -13,126 +15,13 @@ int main(int argc, char* argv[])
     if (argc > 2)
         ir_file = argv[2];
 
-    llvm::LLVMContext context;
-    llvm::Module module("top", context);
-    llvm::IRBuilder<> builder(context);
-
-    llvm::FunctionType *funcType = 
-        llvm::FunctionType::get(builder.getVoidTy(), false);
-    llvm::Function *mainFunc = 
-        llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module);
-    llvm::BasicBlock* entry = llvm::BasicBlock::Create(context, "start", mainFunc);
-
-    builder.SetInsertPoint(entry);
-
     size_t code_size = 0;
     char *binary = read_file_to_buffer_alloc(argv[1], "rb", &code_size);
     int code_offs = check_binary_source(binary);
-    char *pc = binary + code_offs;
 
-    CPU cpu = {"IR CPU"};
-    cpu_init(&cpu);
+    Core core;
+    core.run(binary, code_offs, code_size);
 
-    std::unordered_map<char*, llvm::BasicBlock*> addr_to_block;
-    for (; pc - binary < code_size; pc++)
-    {
-        CMD_CODE code = static_cast<CMD_CODE>(*pc);
-
-        if (code == CMD_JUMP) 
-        {
-            int dest = *(int*)(pc + 1);
-            std::string bb = "BB";
-            addr_to_block.insert({binary + dest, llvm::BasicBlock::Create(context, bb + std::to_string(dest), mainFunc)});
-            addr_to_block.insert({pc, llvm::BasicBlock::Create(context, bb + std::to_string(pc - binary), mainFunc)});
-        }
-
-        switch(code)
-        {
-            #define DEF_CMD(CMD_name, token, scanf_sample, number_of_args, instructions, disasm_print) \
-                case CMD_##CMD_name: \
-                    pc += number_of_args * sizeof(int); \
-                    break;
-
-            #include "../commands.h"
-
-            #undef DEF_CMD
-        }
-    }
-
-    pc = binary + code_offs;
-
-    llvm::FunctionType *calleType = llvm::FunctionType::get(builder.getVoidTy(),
-                                        llvm::ArrayRef<llvm::Type*>({builder.getInt8PtrTy(), builder.getInt8PtrTy()}), false);
-    llvm::Value *cpu_ptr = llvm::ConstantInt::get(builder.getInt64Ty(), reinterpret_cast<uint64_t>(&cpu));
-
-    for (; pc - binary < code_size; pc++)
-    {
-        CMD_CODE code = static_cast<CMD_CODE>(*pc);
-
-        auto block_it = addr_to_block.find(pc);
-        if (block_it != addr_to_block.end() && !is_branch(code))
-        {
-            builder.CreateBr(block_it->second);
-            builder.SetInsertPoint(block_it->second);
-        }
-
-        switch (code)
-        {
-            case CMD_END:
-                builder.CreateRetVoid();
-                break;
-            case CMD_JUMP:
-            {
-                char* dest_pc = *(int*)(pc + 1) + binary;
-                builder.CreateBr(addr_to_block[dest_pc]);
-                builder.SetInsertPoint(block_it->second);
-                break;
-            }
-            default:
-            {
-                llvm::Value *inst_ptr = llvm::ConstantInt::get(builder.getInt64Ty(), reinterpret_cast<uint64_t>(pc));
-                builder.CreateCall(module.getOrInsertFunction(cmd_code_to_func[code], calleType), llvm::ArrayRef<llvm::Value*>({cpu_ptr, inst_ptr}));
-                break;
-            }
-        }
-    
-        switch(code)
-        {
-            #define DEF_CMD(CMD_name, token, scanf_sample, number_of_args, instructions, disasm_print) \
-                case CMD_##CMD_name: \
-                    pc += number_of_args * sizeof(int); \
-                    break;
-
-            #include "../commands.h"
-
-            #undef DEF_CMD
-        }
-    }
-
-    std::cout << "## [LLVM IR] DUMP ##\n";
-
-    std::string ir_str;
-    llvm::raw_string_ostream ir_os(ir_str);
-    module.print(ir_os, nullptr);
-    ir_os.flush();
-    std::cout << ir_str;
-
-    std::cout << "\n## [LLVM EE] RUN ##\n";
-
-    llvm::InitializeNativeTarget();
-    llvm::InitializeNativeTargetAsmPrinter();
-
-    llvm::ExecutionEngine *ee = llvm::EngineBuilder(std::unique_ptr<llvm::Module>(&module)).create();
-    ee->InstallLazyFunctionCreator(lazyFunctionCreator);
-    ee->finalizeObject();
-
-    std::vector<llvm::GenericValue> noargs;
-    cpu.run = true;
-    ee->runFunction(mainFunc, noargs);
-
-    std::cout << "## [LLVM EE] END ##\n";
-
-    cpu_destruct(&cpu);
     free(binary);
 }
 
