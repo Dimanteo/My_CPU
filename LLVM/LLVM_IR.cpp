@@ -25,27 +25,6 @@ int main(int argc, char* argv[])
     free(binary);
 }
 
-bool is_branch(CMD_CODE code)
-{
-    bool ret = false;
-    switch (code)
-    {
-        case CMD_JUMP:
-        case CMD_JUMPA:
-        case CMD_JUMPAE:
-        case CMD_JUMPB:
-        case CMD_JUMPBE:
-        case CMD_JUMPNE:
-        case CMD_JUMPE:
-            ret = true;
-            break;
-        default:
-            ret = false;
-            break;
-    }
-    return ret;
-}
-
 void do_END(CPU *cpu, const char* pc)
 {
     cpu->run = false;
