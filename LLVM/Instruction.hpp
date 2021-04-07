@@ -1,8 +1,8 @@
 #pragma once
-#include <string>
-#include <vector>
-#include <unordered_map>
 #include <llvm-10/llvm/IR/IRBuilder.h>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "../linker.h"
 #include "types.hpp"
@@ -16,7 +16,7 @@ class Insn {
     word_t m_argv[MAX_NUM_ARGS];
     std::string execFName;
 
-    using execFunc_t = void (*)(Core*);
+    using execFunc_t = void (*)(Core *);
     execFunc_t m_exec;
     static std::unordered_map<std::string, execFunc_t> functionCreatorMap;
 
@@ -32,5 +32,3 @@ class Insn {
     size_t getSz() const;
     static void *lazyFunctionCreator(const std::string fname);
 };
-
-
