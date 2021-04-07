@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <llvm-10/llvm/IR/IRBuilder.h>
 
 #include "../linker.h"
@@ -15,8 +16,9 @@ class Insn {
     word_t m_argv[MAX_NUM_ARGS];
     std::string execFName;
 
-    using execFunc_t = void (*)(Core *core);
+    using execFunc_t = void (*)(Core*);
     execFunc_t m_exec;
+    static std::unordered_map<std::string, execFunc_t> functionCreatorMap;
 
     word_t fetchArg(const char *pc, int pos);
 

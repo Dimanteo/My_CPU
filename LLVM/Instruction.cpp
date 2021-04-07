@@ -20,6 +20,10 @@ word_t Insn::fetchArg(const char *pc, int pos) {
     return ((word_t*)(pc + 1))[pos];
 }
 
+void *Insn::lazyFunctionCreator(const std::string fname) {
+    return reinterpret_cast<void*>(functionCreatorMap[fname]);
+}
+
 void Insn::decode(const char *pc) {
     m_code = static_cast<CMD_CODE>(*pc);
     switch (m_code) {
@@ -233,16 +237,6 @@ void Insn::decode(const char *pc) {
             m_exec = nullptr;
             break;
     }
+    if (functionCreatorMap.find(execFName) == functionCreatorMap.end())
+        functionCreatorMap.insert({execFName, m_exec});
 }
-#define DEF_CMD(CMD_name, token, scanf_sample, number_of_args, instructions, disasm_print) \
-    case CMD_##CMD_name: \
-        m_isBranch = ; \
-        m_argc = number_of_args; \
-        m_argv[] = ;\
-        execFName = ;\
-        m_exec = nullptr;\
-        break;
-
-    #include "../commands.h"
-
-#undef DEF_CMD

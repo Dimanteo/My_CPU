@@ -31,14 +31,14 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
         if (insn.isBranch()) {
             // Creating new basic block for jump destination
             size_t dest = insn.getArg(0);
-            if (bblockCache.find(dest) != bblockCache.end()) {
+            if (bblockCache.find(dest) == bblockCache.end()) {
                 llvm::BasicBlock *destBB = llvm::BasicBlock::Create(
                     context, std::to_string(dest), mainFunc);
                 bblockCache.insert({dest, destBB});
             }
             // End current basic block and switch to new one.
             size_t offset = nextPC - code;
-            if (bblockCache.find(offset) != bblockCache.end()) {
+            if (bblockCache.find(offset) == bblockCache.end()) {
                 llvm::BasicBlock *nextBB = llvm::BasicBlock::Create(
                     context, std::to_string(offset), mainFunc);
                 bblockCache.insert({offset, nextBB});
@@ -66,7 +66,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
     // Execute IR
     llvm::ExecutionEngine *ee =
         llvm::EngineBuilder(std::unique_ptr<llvm::Module>(&module)).create();
-    ee->InstallLazyFunctionCreator(lazyFunctionCreator);
+    ee->InstallLazyFunctionCreator(Insn::lazyFunctionCreator);
     ee->finalizeObject();
     std::vector<llvm::GenericValue> noargs;
     m_running = true;
