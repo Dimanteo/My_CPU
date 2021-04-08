@@ -15,20 +15,26 @@ class Insn {
     int m_argc;
     word_t m_argv[MAX_NUM_ARGS];
     std::string execFName;
-
-    using execFunc_t = void (*)(Core *);
-    execFunc_t m_exec;
-    static std::unordered_map<std::string, execFunc_t> functionCreatorMap;
-
     word_t fetchArg(const char *pc, int pos);
 
+  public:  
+    using execFunc_t = void (*)(Core *, const Insn&);
+    using genFunc_t = void (*)(llvm::IRBuilder<>*, const Core&, const Insn&);
+  private:  
+    execFunc_t m_exec;
+    genFunc_t m_genIR;
+
   public:
-    void generateIR(llvm::IRBuilder<> *builder, const Core &core) const;
+    
+    void generateIR(llvm::IRBuilder<> *builder, const Core &core);
     void exec(Core *core) const;
     void decode(const char *pc);
     bool isBranch() const;
     int argc() const;
     word_t getArg(int argi) const;
     size_t getSz() const;
+    std::string getName() const;
     static void *lazyFunctionCreator(const std::string fname);
 };
+
+static std::unordered_map<std::string, Insn::execFunc_t> functionCreatorMap;

@@ -18,6 +18,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
     llvm::BasicBlock *startBB =
         llvm::BasicBlock::Create(context, "start", mainFunc);
 
+    m_module = &module;
     bblockCache.insert({codeOffset, startBB});
 
     // First pass: create basic block map
@@ -102,3 +103,5 @@ void Core::writeWord(address_t adr, word_t src) const {
 }
 
 void Core::stop() { m_running = false; }
+
+llvm::Module *Core::getModule() const { return m_module; }

@@ -1,6 +1,7 @@
 #ifndef LINKER_H
 #define LINKER_H
 #include <stdio.h>
+#include <assert.h>
 
 const char VERSION = 7;
 const unsigned int SIGNATURE =  'kauq';

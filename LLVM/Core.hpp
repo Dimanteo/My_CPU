@@ -20,6 +20,7 @@ class Core {
     char *m_memory;
     bool m_running;
     std::unordered_map<size_t, llvm::BasicBlock *> bblockCache;
+    llvm::Module *m_module;
 
   public:
     Core();
@@ -34,4 +35,5 @@ class Core {
     void write(address_t adr, size_t nbytes, char *src);
     void writeWord(address_t adr, word_t src) const;
     void stop();
+    llvm::Module *getModule() const;
 };
