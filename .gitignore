@@ -1,7 +1,11 @@
 .*
+*.o
+*.so
+*.d
 *.elf
 *.out
 *.txt
 *.log
 *.lst
 *.dak
+*build/
