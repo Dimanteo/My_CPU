@@ -33,8 +33,7 @@ class Insn {
     int argc() const;
     word_t getArg(int argi) const;
     size_t getSz() const;
+    CMD_CODE getCode() const;
     std::string getName() const;
     static void *lazyFunctionCreator(const std::string fname);
 };
-
-static std::unordered_map<std::string, Insn::execFunc_t> functionCreatorMap;

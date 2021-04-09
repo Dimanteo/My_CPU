@@ -11,9 +11,11 @@
 #include <vector>
 
 #include "../linker.h"
+#include "Tracer.hpp"
 #include "types.hpp"
 
 class Core {
+    friend class Tracer;
     std::vector<word_t> m_stack;
     reg_t regFile[NREGS];
     size_t m_pc;
@@ -21,6 +23,7 @@ class Core {
     bool m_running;
     std::unordered_map<size_t, llvm::BasicBlock *> bblockCache;
     llvm::Module *m_module;
+    Tracer *m_tracer;
 
   public:
     Core();
@@ -36,4 +39,6 @@ class Core {
     void writeWord(address_t adr, word_t src) const;
     void stop();
     llvm::Module *getModule() const;
+    Tracer *getTracer() const;
+    void assignTracer(Tracer *tracer);
 };

@@ -16,6 +16,8 @@ int main(int argc, char* argv[])
     code_size -= code_offs;
 
     Core core;
+    Tracer tracer;
+    core.assignTracer(&tracer);
     core.run(binary, code_offs, code_size);
 
     free(binary);

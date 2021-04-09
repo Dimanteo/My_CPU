@@ -1,5 +1,7 @@
 #include "Core.hpp"
 #include "Instruction.hpp"
+#include "generate.hpp"
+#include "exec.hpp"
 
 Core::Core()
     : m_memory(new char[RAM_SIZE * sizeof(word_t)]), m_running(false){};
@@ -25,7 +27,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
     Insn insn;
     char *nextPC;
     std::vector<std::pair<size_t, Insn>> decodedInsns;
-    for (char *pc = entry; pc - entry < codeSz; pc = nextPC) {
+    for (char *pc = entry; pc < entry + codeSz; pc = nextPC) {
         insn.decode(pc);
         decodedInsns.push_back({pc - code, insn});
         nextPC = pc + insn.getSz();
@@ -71,6 +73,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
     ee->finalizeObject();
     std::vector<llvm::GenericValue> noargs;
     m_running = true;
+    m_pc = codeOffset;
     ee->runFunction(mainFunc, noargs);
 }
 
@@ -105,3 +108,11 @@ void Core::writeWord(address_t adr, word_t src) const {
 void Core::stop() { m_running = false; }
 
 llvm::Module *Core::getModule() const { return m_module; }
+
+Tracer *Core::getTracer() const { return m_tracer; }
+
+void Core::assignTracer(Tracer *tracer) { 
+    m_tracer = tracer;
+    m_tracer->watch(this);
+    functionCreatorMap.insert({"trace", trace});
+}

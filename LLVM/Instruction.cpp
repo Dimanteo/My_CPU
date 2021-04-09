@@ -10,13 +10,19 @@ word_t Insn::getArg(int argi) const { return m_argv[argi]; }
 
 size_t Insn::getSz() const { return sizeof(char) + m_argc * sizeof(word_t); }
 
+CMD_CODE Insn::getCode() const { return m_code; }
+
 void Insn::exec(Core *core) const { m_exec(core, *this); }
 
 void Insn::generateIR(llvm::IRBuilder<> *builder, const Core &core) {
+    // insert instruction code
     if (m_genIR != nullptr)
         m_genIR(builder, core, *this);
     else
         gen_default(builder, core, *this);
+    // insert IR callback
+    if (m_code != CMD_END)
+        gen_callback(builder, core, *this);
 }
 
 std::string Insn::getName() const {
@@ -54,7 +60,7 @@ void Insn::decode(const char *pc) {
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_pop";
-        m_exec = nullptr;
+        m_exec = do_pop;
         m_genIR = nullptr;
         break;
     case CMD_ADD:
@@ -109,14 +115,14 @@ void Insn::decode(const char *pc) {
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_out";
-        m_exec = nullptr;
+        m_exec = do_out;
         m_genIR = nullptr;
         break;
     case CMD_IN:
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_in";
-        m_exec = nullptr;
+        m_exec = do_in;
         m_genIR = nullptr;
         break;
     case CMD_PUSHX:
@@ -124,7 +130,7 @@ void Insn::decode(const char *pc) {
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_pushx";
-        m_exec = nullptr;
+        m_exec = do_pushx;
         m_genIR = nullptr;
         break;
     case CMD_JUMP:
@@ -270,6 +276,14 @@ void Insn::decode(const char *pc) {
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_power";
+        m_exec = nullptr;
+        m_genIR = nullptr;
+        break;
+    case ISA_POWER:
+    default:
+        m_isBranch = false;
+        m_argc = 0;
+        execFName = nullptr;
         m_exec = nullptr;
         m_genIR = nullptr;
         break;

@@ -4,7 +4,7 @@ CFLAGS := -Wall -Wextra -g -MD -c
 CXXFLAGS := $(CFLAGS)
 TXT_LIB := ../My_Headers/txt_files.o
 
-all: Instruction.o Core.o LLVM_IR.o $(TXT_LIB)
+all: Instruction.o Core.o Tracer.o exec.o generate.o LLVM_IR.o $(TXT_LIB)
 	$(CC) $^ $(LLVM_DEPS) -o llcpu.out
 
 Instruction.o : Instruction.cpp
@@ -12,6 +12,12 @@ Instruction.o : Instruction.cpp
 Core.o : Core.cpp
 
 LLVM_IR.o : LLVM_IR.cpp
+
+Tracer.o : Tracer.cpp
+
+exec.o : exec.cpp
+
+generate.o : generate.cpp
 
 .PHONY: clean
 

@@ -44,6 +44,7 @@ enum REG_CODE {
 #define DEF_CMD(name, token, scanf_samples, n_args, instructions, disasm) CMD_##name,
     enum CMD_CODE{
         #include "commands.h"
+        ISA_POWER
     };
 #undef DEF_CMD
 
