@@ -1,7 +1,7 @@
 #include "Core.hpp"
 #include "Instruction.hpp"
-#include "generate.hpp"
 #include "exec.hpp"
+#include "generate.hpp"
 
 Core::Core()
     : m_memory(new char[RAM_SIZE * sizeof(word_t)]), m_running(false){};
@@ -111,7 +111,7 @@ llvm::Module *Core::getModule() const { return m_module; }
 
 Tracer *Core::getTracer() const { return m_tracer; }
 
-void Core::assignTracer(Tracer *tracer) { 
+void Core::assignTracer(Tracer *tracer) {
     m_tracer = tracer;
     m_tracer->watch(this);
     functionCreatorMap.insert({"trace", trace});

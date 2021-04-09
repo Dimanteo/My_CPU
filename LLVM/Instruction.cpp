@@ -1,6 +1,6 @@
 #include "Instruction.hpp"
-#include "generate.hpp"
 #include "exec.hpp"
+#include "generate.hpp"
 
 bool Insn::isBranch() const { return m_isBranch; }
 
@@ -12,7 +12,7 @@ size_t Insn::getSz() const { return sizeof(char) + m_argc * sizeof(word_t); }
 
 CMD_CODE Insn::getCode() const { return m_code; }
 
-void Insn::exec(Core *core) const { m_exec(core, *this); }
+void Insn::exec(Core *core) const { m_exec(core, this); }
 
 void Insn::generateIR(llvm::IRBuilder<> *builder, const Core &core) {
     // insert instruction code
@@ -25,9 +25,7 @@ void Insn::generateIR(llvm::IRBuilder<> *builder, const Core &core) {
         gen_callback(builder, core, *this);
 }
 
-std::string Insn::getName() const {
-    return execFName;
-}
+std::string Insn::getName() const { return execFName; }
 
 word_t Insn::fetchArg(const char *pc, int pos) {
     return ((word_t *)(pc + 1))[pos];

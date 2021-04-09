@@ -1,6 +1,6 @@
 CC = clang++
 LLVM_DEPS = `llvm-config --cxxflags --ldflags --libs`
-CFLAGS := -Wall -Wextra -g -MD -c
+CFLAGS := -Wall -Wextra -g -MD
 CXXFLAGS := $(CFLAGS)
 TXT_LIB := ../My_Headers/txt_files.o
 

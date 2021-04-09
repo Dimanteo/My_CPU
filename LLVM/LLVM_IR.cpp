@@ -1,12 +1,10 @@
+#include "../My_Headers/txt_files.h"
 #include "../linker.h"
 #include "Core.hpp"
 #include "Instruction.hpp"
-#include "../My_Headers/txt_files.h"
 
-int main(int argc, char* argv[])
-{
-    if (argc != 2)
-    {
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
         fprintf(stderr, "Usage: %s <binary>\n", argv[0]);
         return EXIT_FAILURE;
     }
