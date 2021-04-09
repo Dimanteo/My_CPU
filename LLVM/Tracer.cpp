@@ -7,7 +7,7 @@ void Tracer::watch(Core *core) {
     m_dumpCnt = 0;
     m_core = core;
     insnExecuted = 0;
-    br = 0;
+    branches = 0;
     for (size_t i = 0; i < ISA_POWER; i++) {
         execs_cnt[i] = 0;
     }
@@ -16,19 +16,30 @@ void Tracer::watch(Core *core) {
 void Tracer::stat(const Insn &insn) {
     insnExecuted++;
     if (insn.isBranch()) {
-        br++;
+        branches++;
     }
     execs_cnt[insn.getCode()]++;
 }
 
 void Tracer::dump(const Insn &insn) {
     printf("## Core state dump %lu ##\n{\n", ++m_dumpCnt);
-    printf("\tInstruction : %s\n", insn.getName().c_str());
-    printf("\tPC : %lu\n", m_core->m_pc);
+    printf("\tInstruction: %s\n", insn.getName().c_str());
+    statDump();
     registerDump();
     stackDump();
     memoryDump();
     printf("}\n");
+}
+
+void Tracer::statDump() const {
+    printf("\tInstructions summary:\n");
+    printf("\tExecuted: %lu\n", insnExecuted);
+    printf("\tBranches: %lu\n", branches);
+    printf("\tBy instruction:\n");
+    for (int i = 0; i < ISA_POWER; i++) {
+        printf("\t\t[%d] : %lu\n", i, execs_cnt[i]);
+    }
+    
 }
 
 void Tracer::registerDump() const {

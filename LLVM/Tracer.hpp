@@ -12,12 +12,13 @@ class Tracer {
     using cnt_t = size_t;
     size_t m_dumpCnt;
     cnt_t insnExecuted;
-    cnt_t br;
+    cnt_t branches;
     // cnt_t brTaken;
     // cnt_t brNotTaken;
 
     cnt_t execs_cnt[ISA_POWER];
 
+    void statDump() const;
     void registerDump() const;
     void stackDump() const;
     void memoryDump() const;
