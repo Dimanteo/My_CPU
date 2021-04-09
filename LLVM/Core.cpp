@@ -50,7 +50,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
     }
 
     // Second pass: generating IR
-    for (auto pc_insn : decodedInsns) {
+    for (auto &pc_insn : decodedInsns) {
         if (bblockCache.find(pc_insn.first) != bblockCache.end())
             builder.SetInsertPoint(bblockCache[pc_insn.first]);
         pc_insn.second.generateIR(&builder, *this);
