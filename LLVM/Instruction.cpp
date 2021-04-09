@@ -65,48 +65,48 @@ void Insn::decode(const char *pc) {
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_add";
-        m_exec = nullptr;
+        m_exec = do_add;
         m_genIR = nullptr;
         break;
     case CMD_SUB:
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_sub";
-        m_exec = nullptr;
+        m_exec = do_sub;
         m_genIR = nullptr;
         break;
     case CMD_MUL:
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_mul";
-        m_exec = nullptr;
+        m_exec = do_mul;
         m_genIR = nullptr;
         break;
     case CMD_DIV:
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_div";
-        m_exec = nullptr;
+        m_exec = do_div;
         m_genIR = nullptr;
         break;
     case CMD_SQR:
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_sqr";
-        m_exec = nullptr;
+        m_exec = do_sqr;
         break;
     case CMD_SIN:
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_sin";
-        m_exec = nullptr;
+        m_exec = do_sin;
         m_genIR = nullptr;
         break;
     case CMD_COS:
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_cos";
-        m_exec = nullptr;
+        m_exec = do_cos;
         m_genIR = nullptr;
         break;
     case CMD_OUT:
@@ -274,7 +274,7 @@ void Insn::decode(const char *pc) {
         m_isBranch = false;
         m_argc = 0;
         execFName = "do_power";
-        m_exec = nullptr;
+        m_exec = do_power;
         m_genIR = nullptr;
         break;
     case ISA_POWER:
