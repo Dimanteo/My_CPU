@@ -1,0 +1,10 @@
+jmp lbl
+
+push 1
+out
+end
+
+lbl:
+push 2
+out
+end

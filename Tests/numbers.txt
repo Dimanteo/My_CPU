@@ -1,0 +1,21 @@
+push 3
+push 2
+add
+out
+
+push 3
+push 2
+mul
+out
+
+push 14
+push 2
+div
+out
+
+push 9
+push 1
+sub
+out
+
+end

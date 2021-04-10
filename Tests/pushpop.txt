@@ -1,0 +1,5 @@
+push 42
+pop ax
+push ax
+out
+end
