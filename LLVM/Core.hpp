@@ -41,4 +41,5 @@ class Core {
     llvm::Module *getModule() const;
     Tracer *getTracer() const;
     void assignTracer(Tracer *tracer);
+    llvm::BasicBlock *getBasicBlock(size_t pc);
 };

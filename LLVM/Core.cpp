@@ -22,6 +22,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
 
     m_module = &module;
     bblockCache.insert({codeOffset, startBB});
+    builder.SetInsertPoint(startBB);
 
     // First pass: create basic block map
     Insn insn;
@@ -51,9 +52,13 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
 
     // Second pass: generating IR
     for (auto &pc_insn : decodedInsns) {
-        if (bblockCache.find(pc_insn.first) != bblockCache.end())
-            builder.SetInsertPoint(bblockCache[pc_insn.first]);
         pc_insn.second.generateIR(&builder, *this);
+        auto nextBBlock_it = bblockCache.find(pc_insn.first + pc_insn.second.getSz());
+        if (nextBBlock_it != bblockCache.end()) {
+            if (!pc_insn.second.isBranch()) 
+                builder.CreateBr((*nextBBlock_it).second);
+            builder.SetInsertPoint((*nextBBlock_it).second);
+        }
     }
 
     // Printing for debug
@@ -115,4 +120,8 @@ void Core::assignTracer(Tracer *tracer) {
     m_tracer = tracer;
     m_tracer->watch(this);
     functionCreatorMap.insert({"trace", trace});
+}
+
+llvm::BasicBlock *Core::getBasicBlock(size_t pc) {
+    return bblockCache[pc];
 }

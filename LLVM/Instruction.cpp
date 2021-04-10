@@ -14,15 +14,14 @@ CMD_CODE Insn::getCode() const { return m_code; }
 
 void Insn::exec(Core *core) const { m_exec(core, this); }
 
-void Insn::generateIR(llvm::IRBuilder<> *builder, const Core &core) {
+void Insn::generateIR(llvm::IRBuilder<> *builder, Core &core) {
+    // insert IR callback
+    gen_callback(builder, core, *this);
     // insert instruction code
     if (m_genIR != nullptr)
         m_genIR(builder, core, *this);
     else
         gen_default(builder, core, *this);
-    // insert IR callback
-    if (m_code != CMD_END)
-        gen_callback(builder, core, *this);
 }
 
 std::string Insn::getName() const { return execFName; }
@@ -137,7 +136,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jump";
         m_exec = nullptr;
-        m_genIR = nullptr;
+        m_genIR = gen_jump;
         break;
     case CMD_JUMPA:
         m_isBranch = true;

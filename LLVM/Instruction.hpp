@@ -19,14 +19,14 @@ class Insn {
 
   public:
     using execFunc_t = void (*)(Core *, const Insn *);
-    using genFunc_t = void (*)(llvm::IRBuilder<> *, const Core &, const Insn &);
+    using genFunc_t = void (*)(llvm::IRBuilder<> *, Core &, const Insn &);
 
   private:
     execFunc_t m_exec;
     genFunc_t m_genIR;
 
   public:
-    void generateIR(llvm::IRBuilder<> *builder, const Core &core);
+    void generateIR(llvm::IRBuilder<> *builder, Core &core);
     void exec(Core *core) const;
     void decode(const char *pc);
     bool isBranch() const;

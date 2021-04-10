@@ -3,9 +3,7 @@
 #include "Instruction.hpp"
 #include "types.hpp"
 
-std::unordered_map<std::string, Insn::execFunc_t> functionCreatorMap;
-
-void gen_default(llvm::IRBuilder<> *builder, const Core &core,
+void gen_default(llvm::IRBuilder<> *builder, Core &core,
                  const Insn &insn) {
     llvm::FunctionType *calleeT = llvm::FunctionType::get(
         builder->getVoidTy(),
@@ -21,7 +19,7 @@ void gen_default(llvm::IRBuilder<> *builder, const Core &core,
         llvm::ArrayRef<llvm::Value *>({core_ptr, insn_ptr}));
 }
 
-void gen_callback(llvm::IRBuilder<> *builder, const Core &core,
+void gen_callback(llvm::IRBuilder<> *builder, Core &core,
                   const Insn &insn) {
     llvm::FunctionType *calleeT = llvm::FunctionType::get(
         builder->getVoidTy(),
@@ -36,6 +34,11 @@ void gen_callback(llvm::IRBuilder<> *builder, const Core &core,
                         llvm::ArrayRef<llvm::Value *>({core_ptr, insn_ptr}));
 }
 
-void gen_end(llvm::IRBuilder<> *builder, const Core &core, const Insn &insn) {
+void gen_end(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
     builder->CreateRetVoid();
+}
+
+void gen_jump(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
+    llvm::BasicBlock *bb = core.getBasicBlock(insn.getArg(0));
+    builder->CreateBr(bb);
 }

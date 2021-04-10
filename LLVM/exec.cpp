@@ -4,9 +4,11 @@
 #include "Tracer.hpp"
 #include "types.hpp"
 
+std::unordered_map<std::string, Insn::execFunc_t> functionCreatorMap;
+
 void trace(Core *core, const Insn *insn) {
-    core->getTracer()->stat(*insn);
     core->getTracer()->dump(*insn);
+    core->getTracer()->stat(*insn);
 }
 
 void do_end(Core *core, const Insn *insn) { core->stop(); }
