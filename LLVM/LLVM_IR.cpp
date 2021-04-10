@@ -15,8 +15,11 @@ int main(int argc, char *argv[]) {
 
     Core core;
     Tracer tracer;
+    FILE *traceDump = fopen("trace.txt", "w");
+    tracer.setOutputStream(traceDump);
     core.assignTracer(&tracer);
     core.run(binary, code_offs, code_size);
 
+    fclose(traceDump);
     free(binary);
 }
