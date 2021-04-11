@@ -12,3 +12,5 @@ void gen_end(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);
 void gen_jump(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);
 
 void gen_jumpa(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);
+
+void gen_jumpae(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);

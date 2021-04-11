@@ -152,7 +152,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpae";
         m_exec = nullptr;
-        m_genIR = nullptr;
+        m_genIR = gen_jumpae;
         break;
     case CMD_JUMPB:
         m_isBranch = true;
