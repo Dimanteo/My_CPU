@@ -4,16 +4,14 @@
 #include "Tracer.hpp"
 #include "types.hpp"
 
-std::unordered_map<std::string, void*> functionCreatorMap;
+std::unordered_map<std::string, void *> functionCreatorMap;
 
 void trace(Core *core, const Insn *insn) {
     core->getTracer()->dump(*insn);
     core->getTracer()->stat(*insn);
 }
 
-word_t ir_pop(Core *core) {
-    return core->pop();
-}
+word_t ir_pop(Core *core) { return core->pop(); }
 
 void do_end(Core *core, const Insn *insn) { core->stop(); }
 
@@ -78,7 +76,7 @@ void do_cos(Core *core, const Insn *insn) {
 
 void do_power(Core *core, const Insn *insn) {
     float power = static_cast<float>(core->pop()) / PRECISION;
-    double base  = static_cast<double>(core->pop()) / PRECISION;
+    double base = static_cast<double>(core->pop()) / PRECISION;
     int res = static_cast<word_t>(powf(base, power) * PRECISION);
     core->push(res);
 }

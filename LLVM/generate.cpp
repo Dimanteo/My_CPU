@@ -58,6 +58,7 @@ void gen_jumpa(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
     llvm::Value *rhs = ir_pop(builder, core);
     llvm::Value *cond = builder->CreateICmpUGT(lhs, rhs);
     llvm::BasicBlock *trueDest = core.getBasicBlock(insn.getArg(0));
-    llvm::BasicBlock *falseDest = core.getBasicBlock(core.getPC() + insn.getSz());
+    llvm::BasicBlock *falseDest =
+        core.getBasicBlock(core.getPC() + insn.getSz());
     builder->CreateCondBr(cond, trueDest, falseDest);
 }

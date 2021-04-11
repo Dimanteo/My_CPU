@@ -1,11 +1,11 @@
 #pragma once
-#include <unordered_map>
 #include "types.hpp"
+#include <unordered_map>
 
 class Core;
 class Insn;
 
-extern std::unordered_map<std::string, void*> functionCreatorMap;
+extern std::unordered_map<std::string, void *> functionCreatorMap;
 
 void trace(Core *core, const Insn *insn);
 

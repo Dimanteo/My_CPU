@@ -54,15 +54,16 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
     for (auto &pc_insn : decodedInsns) {
         m_pc = pc_insn.first;
         pc_insn.second.generateIR(&builder, *this);
-        auto nextBBlock_it = bblockCache.find(pc_insn.first + pc_insn.second.getSz());
+        auto nextBBlock_it =
+            bblockCache.find(pc_insn.first + pc_insn.second.getSz());
         if (nextBBlock_it != bblockCache.end()) {
-            if (!pc_insn.second.isBranch()) 
+            if (!pc_insn.second.isBranch())
                 builder.CreateBr((*nextBBlock_it).second);
             builder.SetInsertPoint((*nextBBlock_it).second);
         }
     }
 
-    functionCreatorMap.insert({"pop", reinterpret_cast<void*>(ir_pop)});
+    functionCreatorMap.insert({"pop", reinterpret_cast<void *>(ir_pop)});
 
     // Printing for debug
     std::cout << "## [LLVM IR] DUMP ##\n";
@@ -122,17 +123,11 @@ Tracer *Core::getTracer() const { return m_tracer; }
 void Core::assignTracer(Tracer *tracer) {
     m_tracer = tracer;
     m_tracer->watch(this);
-    functionCreatorMap.insert({"trace", reinterpret_cast<void*>(trace)});
+    functionCreatorMap.insert({"trace", reinterpret_cast<void *>(trace)});
 }
 
-llvm::BasicBlock *Core::getBasicBlock(size_t pc) {
-    return bblockCache[pc];
-}
+llvm::BasicBlock *Core::getBasicBlock(size_t pc) { return bblockCache[pc]; }
 
-size_t Core::getPC() const {
-    return m_pc;
-}
+size_t Core::getPC() const { return m_pc; }
 
-void Core::setPC(size_t newPC) {
-    m_pc = newPC;
-}
+void Core::setPC(size_t newPC) { m_pc = newPC; }

@@ -286,5 +286,6 @@ void Insn::decode(const char *pc) {
         break;
     }
     if (functionCreatorMap.find(execFName) == functionCreatorMap.end())
-        functionCreatorMap.insert({execFName, reinterpret_cast<void*>(m_exec)});
+        functionCreatorMap.insert(
+            {execFName, reinterpret_cast<void *>(m_exec)});
 }
