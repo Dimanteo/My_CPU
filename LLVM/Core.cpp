@@ -27,6 +27,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
     // First pass: create basic block map
     Insn insn;
     char *nextPC;
+    llvm::Function *func = mainFunc;
     std::vector<std::pair<size_t, Insn>> decodedInsns;
     for (char *pc = entry; pc < entry + codeSz; pc = nextPC) {
         insn.decode(pc);
@@ -37,7 +38,6 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
             size_t dest = insn.getArg(0);
             size_t offset = nextPC - code;
             if (bblockCache.find(dest) == bblockCache.end()) {
-                llvm::Function *func = mainFunc;
                 std::string name = std::to_string(dest);
                 if (insn.getCode() == CMD_CALL) {
                     if (functionMap.find(dest) == functionMap.end()) {
@@ -59,7 +59,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
             if (insn.isTerm() &&
                 bblockCache.find(offset) == bblockCache.end()) {
                 llvm::BasicBlock *nextBB = llvm::BasicBlock::Create(
-                    context, std::to_string(offset), mainFunc);
+                    context, std::to_string(offset), func);
                 bblockCache.insert({offset, nextBB});
             }
         }

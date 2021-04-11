@@ -1,0 +1,24 @@
+call main
+end
+bar:
+    push 3
+    out
+    ret
+
+main:
+    call foo
+    call boo
+    call bar
+    push 4
+    out
+    ret
+
+foo:
+    push 1
+    out
+    ret
+
+boo:
+    push 2
+    out
+    ret

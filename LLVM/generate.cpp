@@ -134,5 +134,5 @@ void gen_ret(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
 void gen_call(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
     llvm::Function *func = core.getFunction(insn.getArg(0));
     ir_push(builder, core, core.getPC());
-    builder->CreateCall(func, llvm::ArrayRef<llvm::Value *>(), func->getName());
+    builder->CreateCall(func, llvm::ArrayRef<llvm::Value *>());
 }

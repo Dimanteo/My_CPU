@@ -1,0 +1,57 @@
+push 0
+push 1
+ja ja_test
+
+push -1
+out
+end
+
+ja_test:
+push 1
+push 1
+jae jae_test
+
+push -1
+out
+end
+
+jae_test:
+push 1
+push 0
+jb jb_test
+
+push -1
+out
+end
+
+jb_test:
+push -1
+push -2
+jbe jbe_test
+
+push -1
+out
+end
+
+jbe_test:
+push 5
+push 5
+je je_test
+
+push -1
+out
+end
+
+je_test:
+push 10
+push -10
+jne jne_test
+
+push -1
+out
+end
+
+jne_test:
+push 0
+out
+end
