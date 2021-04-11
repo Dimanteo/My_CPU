@@ -4,11 +4,15 @@
 #include "Tracer.hpp"
 #include "types.hpp"
 
-std::unordered_map<std::string, Insn::execFunc_t> functionCreatorMap;
+std::unordered_map<std::string, void*> functionCreatorMap;
 
 void trace(Core *core, const Insn *insn) {
     core->getTracer()->dump(*insn);
     core->getTracer()->stat(*insn);
+}
+
+word_t ir_pop(Core *core) {
+    return core->pop();
 }
 
 void do_end(Core *core, const Insn *insn) { core->stop(); }

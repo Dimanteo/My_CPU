@@ -1,9 +1,15 @@
 #pragma once
+#include <unordered_map>
+#include "types.hpp"
 
 class Core;
 class Insn;
 
+extern std::unordered_map<std::string, void*> functionCreatorMap;
+
 void trace(Core *core, const Insn *insn);
+
+word_t ir_pop(Core *core);
 
 void do_end(Core *core, const Insn *insn);
 

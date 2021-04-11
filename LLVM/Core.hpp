@@ -42,4 +42,6 @@ class Core {
     Tracer *getTracer() const;
     void assignTracer(Tracer *tracer);
     llvm::BasicBlock *getBasicBlock(size_t pc);
+    size_t getPC() const;
+    void setPC(size_t newPC);
 };

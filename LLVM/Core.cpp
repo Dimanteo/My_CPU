@@ -52,6 +52,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
 
     // Second pass: generating IR
     for (auto &pc_insn : decodedInsns) {
+        m_pc = pc_insn.first;
         pc_insn.second.generateIR(&builder, *this);
         auto nextBBlock_it = bblockCache.find(pc_insn.first + pc_insn.second.getSz());
         if (nextBBlock_it != bblockCache.end()) {
@@ -60,6 +61,8 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
             builder.SetInsertPoint((*nextBBlock_it).second);
         }
     }
+
+    functionCreatorMap.insert({"pop", reinterpret_cast<void*>(ir_pop)});
 
     // Printing for debug
     std::cout << "## [LLVM IR] DUMP ##\n";
@@ -119,9 +122,17 @@ Tracer *Core::getTracer() const { return m_tracer; }
 void Core::assignTracer(Tracer *tracer) {
     m_tracer = tracer;
     m_tracer->watch(this);
-    functionCreatorMap.insert({"trace", trace});
+    functionCreatorMap.insert({"trace", reinterpret_cast<void*>(trace)});
 }
 
 llvm::BasicBlock *Core::getBasicBlock(size_t pc) {
     return bblockCache[pc];
+}
+
+size_t Core::getPC() const {
+    return m_pc;
+}
+
+void Core::setPC(size_t newPC) {
+    m_pc = newPC;
 }

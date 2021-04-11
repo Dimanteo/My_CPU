@@ -38,7 +38,7 @@ void Insn::decode(const char *pc) {
     m_code = static_cast<CMD_CODE>(*pc);
     switch (m_code) {
     case CMD_END:
-        m_isBranch = 0;
+        m_isBranch = 1;
         m_argc = 0;
         execFName = "do_end";
         m_exec = do_end;
@@ -144,7 +144,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpa";
         m_exec = nullptr;
-        m_genIR = nullptr;
+        m_genIR = gen_jumpa;
         break;
     case CMD_JUMPAE:
         m_isBranch = true;
@@ -286,5 +286,5 @@ void Insn::decode(const char *pc) {
         break;
     }
     if (functionCreatorMap.find(execFName) == functionCreatorMap.end())
-        functionCreatorMap.insert({execFName, m_exec});
+        functionCreatorMap.insert({execFName, reinterpret_cast<void*>(m_exec)});
 }
