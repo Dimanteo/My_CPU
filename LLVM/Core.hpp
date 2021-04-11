@@ -22,6 +22,7 @@ class Core {
     char *m_memory;
     bool m_running;
     std::unordered_map<size_t, llvm::BasicBlock *> bblockCache;
+    std::unordered_map<size_t, llvm::Function *> functionMap;
     llvm::Module *m_module;
     Tracer *m_tracer;
 
@@ -42,6 +43,7 @@ class Core {
     Tracer *getTracer() const;
     void assignTracer(Tracer *tracer);
     llvm::BasicBlock *getBasicBlock(size_t pc);
+    llvm::Function *getFunction(size_t pc);
     size_t getPC() const;
     void setPC(size_t newPC);
 };

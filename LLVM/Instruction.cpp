@@ -4,6 +4,8 @@
 
 bool Insn::isBranch() const { return m_isBranch; }
 
+bool Insn::isTerm() const { return m_isTerminator; }
+
 int Insn::argc() const { return m_argc; }
 
 word_t Insn::getArg(int argi) const { return m_argv[argi]; }
@@ -36,16 +38,18 @@ void *Insn::lazyFunctionCreator(const std::string fname) {
 
 void Insn::decode(const char *pc) {
     m_code = static_cast<CMD_CODE>(*pc);
+    m_isTerminator = false;
     switch (m_code) {
     case CMD_END:
-        m_isBranch = 1;
+        m_isBranch = false;
+        m_isTerminator = true;
         m_argc = 0;
         execFName = "do_end";
         m_exec = do_end;
-        m_genIR = gen_end;
+        m_genIR = gen_ret;
         break;
     case CMD_PUSH:
-        m_isBranch = 0;
+        m_isBranch = false;
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_push";
@@ -132,6 +136,7 @@ void Insn::decode(const char *pc) {
         break;
     case CMD_JUMP:
         m_isBranch = true;
+        m_isTerminator = true;
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jump";
@@ -140,6 +145,7 @@ void Insn::decode(const char *pc) {
         break;
     case CMD_JUMPA:
         m_isBranch = true;
+        m_isTerminator = true;
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpa";
@@ -148,6 +154,7 @@ void Insn::decode(const char *pc) {
         break;
     case CMD_JUMPAE:
         m_isBranch = true;
+        m_isTerminator = true;
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpae";
@@ -156,6 +163,7 @@ void Insn::decode(const char *pc) {
         break;
     case CMD_JUMPB:
         m_isBranch = true;
+        m_isTerminator = true;
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpb";
@@ -164,6 +172,7 @@ void Insn::decode(const char *pc) {
         break;
     case CMD_JUMPBE:
         m_isBranch = true;
+        m_isTerminator = true;
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpbe";
@@ -172,6 +181,7 @@ void Insn::decode(const char *pc) {
         break;
     case CMD_JUMPE:
         m_isBranch = true;
+        m_isTerminator = true;
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpe";
@@ -180,6 +190,7 @@ void Insn::decode(const char *pc) {
         break;
     case CMD_JUMPNE:
         m_isBranch = true;
+        m_isTerminator = true;
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpne";
@@ -192,14 +203,15 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_call";
         m_exec = nullptr;
-        m_genIR = nullptr;
+        m_genIR = gen_call;
         break;
     case CMD_RET:
-        m_isBranch = true;
+        m_isBranch = false;
+        m_isTerminator = true;
         m_argc = 0;
         execFName = "do_ret";
         m_exec = nullptr;
-        m_genIR = nullptr;
+        m_genIR = gen_ret;
         break;
     case CMD_POPRAM_NX:
         m_isBranch = false;

@@ -32,17 +32,32 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
         insn.decode(pc);
         decodedInsns.push_back({pc - code, insn});
         nextPC = pc + insn.getSz();
-        if (insn.isBranch() && insn.getCode() != CMD_END) {
+        if (insn.isBranch()) {
             // Creating new basic block for jump destination
             size_t dest = insn.getArg(0);
+            size_t offset = nextPC - code;
             if (bblockCache.find(dest) == bblockCache.end()) {
-                llvm::BasicBlock *destBB = llvm::BasicBlock::Create(
-                    context, std::to_string(dest), mainFunc);
+                llvm::Function *func = mainFunc;
+                std::string name = std::to_string(dest);
+                if (insn.getCode() == CMD_CALL) {
+                    if (functionMap.find(dest) == functionMap.end()) {
+                        llvm::FunctionType *funcTy =
+                            llvm::FunctionType::get(builder.getVoidTy(), false);
+                        func = llvm::Function::Create(
+                            funcTy, llvm::Function::ExternalLinkage, name,
+                            module);
+                        functionMap.insert({dest, func});
+                    } else {
+                        func = functionMap[dest];
+                    }
+                }
+                llvm::BasicBlock *destBB =
+                    llvm::BasicBlock::Create(context, name, func);
                 bblockCache.insert({dest, destBB});
             }
             // End current basic block and switch to new one.
-            size_t offset = nextPC - code;
-            if (bblockCache.find(offset) == bblockCache.end()) {
+            if (insn.isTerm() &&
+                bblockCache.find(offset) == bblockCache.end()) {
                 llvm::BasicBlock *nextBB = llvm::BasicBlock::Create(
                     context, std::to_string(offset), mainFunc);
                 bblockCache.insert({offset, nextBB});
@@ -57,13 +72,14 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
         auto nextBBlock_it =
             bblockCache.find(pc_insn.first + pc_insn.second.getSz());
         if (nextBBlock_it != bblockCache.end()) {
-            if (!pc_insn.second.isBranch())
+            if (!pc_insn.second.isTerm())
                 builder.CreateBr((*nextBBlock_it).second);
             builder.SetInsertPoint((*nextBBlock_it).second);
         }
     }
 
     functionCreatorMap.insert({"pop", reinterpret_cast<void *>(ir_pop)});
+    functionCreatorMap.insert({"push", reinterpret_cast<void *>(ir_push)});
 
     // Printing for debug
     std::cout << "## [LLVM IR] DUMP ##\n";
@@ -127,6 +143,8 @@ void Core::assignTracer(Tracer *tracer) {
 }
 
 llvm::BasicBlock *Core::getBasicBlock(size_t pc) { return bblockCache[pc]; }
+
+llvm::Function *Core::getFunction(size_t pc) { return functionMap[pc]; }
 
 size_t Core::getPC() const { return m_pc; }
 

@@ -44,6 +44,19 @@ llvm::Value *ir_pop(llvm::IRBuilder<> *builder, Core &core) {
     return retval;
 }
 
+void ir_push(llvm::IRBuilder<> *builder, Core &core, word_t item) {
+    llvm::FunctionType *calleeT = llvm::FunctionType::get(
+        builder->getVoidTy(),
+        llvm::ArrayRef<llvm::Type *>(
+            {builder->getInt8PtrTy(), builder->getInt32Ty()}),
+        false);
+    llvm::Value *core_ptr = llvm::ConstantInt::get(
+        builder->getInt64Ty(), reinterpret_cast<uint64_t>(&core));
+    llvm::Value *value = llvm::ConstantInt::get(builder->getInt32Ty(), item);
+    builder->CreateCall(core.getModule()->getOrInsertFunction("push", calleeT),
+                        llvm::ArrayRef<llvm::Value *>({core_ptr, value}));
+}
+
 void gen_end(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
     builder->CreateRetVoid();
 }
@@ -111,4 +124,15 @@ void gen_jumpne(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
     llvm::BasicBlock *falseDest =
         core.getBasicBlock(core.getPC() + insn.getSz());
     builder->CreateCondBr(cond, trueDest, falseDest);
+}
+
+void gen_ret(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
+    ir_pop(builder, core);
+    builder->CreateRetVoid();
+}
+
+void gen_call(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
+    llvm::Function *func = core.getFunction(insn.getArg(0));
+    ir_push(builder, core, core.getPC());
+    builder->CreateCall(func, llvm::ArrayRef<llvm::Value *>(), func->getName());
 }

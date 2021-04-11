@@ -13,6 +13,8 @@ void trace(Core *core, const Insn *insn) {
 
 word_t ir_pop(Core *core) { return core->pop(); }
 
+void ir_push(Core *core, word_t val) { core->push(val); }
+
 void do_end(Core *core, const Insn *insn) { core->stop(); }
 
 void do_push(Core *core, const Insn *insn) { core->push(insn->getArg(0)); }

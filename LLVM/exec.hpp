@@ -11,6 +11,8 @@ void trace(Core *core, const Insn *insn);
 
 word_t ir_pop(Core *core);
 
+void ir_push(Core *core, word_t val);
+
 void do_end(Core *core, const Insn *insn);
 
 void do_push(Core *core, const Insn *insn);

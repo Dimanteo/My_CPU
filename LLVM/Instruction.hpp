@@ -12,6 +12,7 @@ class Core;
 class Insn {
     CMD_CODE m_code;
     bool m_isBranch;
+    bool m_isTerminator;
     int m_argc;
     word_t m_argv[MAX_NUM_ARGS];
     std::string execFName;
@@ -30,6 +31,7 @@ class Insn {
     void exec(Core *core) const;
     void decode(const char *pc);
     bool isBranch() const;
+    bool isTerm() const;
     int argc() const;
     word_t getArg(int argi) const;
     size_t getSz() const;
