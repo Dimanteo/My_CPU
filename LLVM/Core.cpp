@@ -32,7 +32,7 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
         insn.decode(pc);
         decodedInsns.push_back({pc - code, insn});
         nextPC = pc + insn.getSz();
-        if (insn.isBranch()) {
+        if (insn.isBranch() && insn.getCode() != CMD_END) {
             // Creating new basic block for jump destination
             size_t dest = insn.getArg(0);
             if (bblockCache.find(dest) == bblockCache.end()) {
