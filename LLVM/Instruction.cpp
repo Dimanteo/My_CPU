@@ -46,7 +46,7 @@ void Insn::decode(const char *pc) {
         m_argc = 0;
         execFName = "do_end";
         m_exec = do_end;
-        m_genIR = gen_ret;
+        m_genIR = gen_end;
         break;
     case CMD_PUSH:
         m_isBranch = false;
@@ -219,7 +219,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         m_argv[1] = fetchArg(pc, 1);
         execFName = "do_popramnx";
-        m_exec = nullptr;
+        m_exec = do_store_nx;
         m_genIR = nullptr;
         break;
     case CMD_POPRAM_XN:
@@ -228,7 +228,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         m_argv[1] = fetchArg(pc, 1);
         execFName = "do_popramxn";
-        m_exec = nullptr;
+        m_exec = do_store_xn;
         m_genIR = nullptr;
         break;
     case CMD_POPRAM:
@@ -236,7 +236,7 @@ void Insn::decode(const char *pc) {
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_popram";
-        m_exec = nullptr;
+        m_exec = do_store;
         m_genIR = nullptr;
         break;
     case CMD_PUSHRAM:
@@ -244,7 +244,7 @@ void Insn::decode(const char *pc) {
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_pushram";
-        m_exec = nullptr;
+        m_exec = do_load;
         m_genIR = nullptr;
         break;
     case CMD_POPRAM_X:
@@ -252,7 +252,7 @@ void Insn::decode(const char *pc) {
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_popramx";
-        m_exec = nullptr;
+        m_exec = do_store_x;
         m_genIR = nullptr;
         break;
     case CMD_PUSHRAM_X:
@@ -260,7 +260,7 @@ void Insn::decode(const char *pc) {
         m_argc = 1;
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_pushramx";
-        m_exec = nullptr;
+        m_exec = do_load_x;
         m_genIR = nullptr;
         break;
     case CMD_PUSHRAM_NX:
@@ -269,7 +269,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         m_argv[1] = fetchArg(pc, 1);
         execFName = "do_pushramnx";
-        m_exec = nullptr;
+        m_exec = do_load_nx;
         m_genIR = nullptr;
         break;
     case CMD_PUSHRAM_XN:
@@ -278,7 +278,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         m_argv[1] = fetchArg(pc, 1);
         execFName = "do_pushramxn";
-        m_exec = nullptr;
+        m_exec = do_load_xn;
         m_genIR = nullptr;
         break;
     case CMD_POWER:
