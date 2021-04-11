@@ -14,3 +14,11 @@ void gen_jump(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);
 void gen_jumpa(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);
 
 void gen_jumpae(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);
+
+void gen_jumpb(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);
+
+void gen_jumpbe(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);
+
+void gen_jumpeq(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);
+
+void gen_jumpne(llvm::IRBuilder<> *builder, Core &core, const Insn &insn);

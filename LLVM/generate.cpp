@@ -56,7 +56,7 @@ void gen_jump(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
 void gen_jumpa(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
     llvm::Value *lhs = ir_pop(builder, core);
     llvm::Value *rhs = ir_pop(builder, core);
-    llvm::Value *cond = builder->CreateICmpUGT(lhs, rhs);
+    llvm::Value *cond = builder->CreateICmpSGT(lhs, rhs);
     llvm::BasicBlock *trueDest = core.getBasicBlock(insn.getArg(0));
     llvm::BasicBlock *falseDest =
         core.getBasicBlock(core.getPC() + insn.getSz());
@@ -66,7 +66,47 @@ void gen_jumpa(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
 void gen_jumpae(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
     llvm::Value *lhs = ir_pop(builder, core);
     llvm::Value *rhs = ir_pop(builder, core);
-    llvm::Value *cond = builder->CreateICmpUGE(lhs, rhs);
+    llvm::Value *cond = builder->CreateICmpSGE(lhs, rhs);
+    llvm::BasicBlock *trueDest = core.getBasicBlock(insn.getArg(0));
+    llvm::BasicBlock *falseDest =
+        core.getBasicBlock(core.getPC() + insn.getSz());
+    builder->CreateCondBr(cond, trueDest, falseDest);
+}
+
+void gen_jumpb(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
+    llvm::Value *lhs = ir_pop(builder, core);
+    llvm::Value *rhs = ir_pop(builder, core);
+    llvm::Value *cond = builder->CreateICmpSLT(lhs, rhs);
+    llvm::BasicBlock *trueDest = core.getBasicBlock(insn.getArg(0));
+    llvm::BasicBlock *falseDest =
+        core.getBasicBlock(core.getPC() + insn.getSz());
+    builder->CreateCondBr(cond, trueDest, falseDest);
+}
+
+void gen_jumpbe(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
+    llvm::Value *lhs = ir_pop(builder, core);
+    llvm::Value *rhs = ir_pop(builder, core);
+    llvm::Value *cond = builder->CreateICmpSLE(lhs, rhs);
+    llvm::BasicBlock *trueDest = core.getBasicBlock(insn.getArg(0));
+    llvm::BasicBlock *falseDest =
+        core.getBasicBlock(core.getPC() + insn.getSz());
+    builder->CreateCondBr(cond, trueDest, falseDest);
+}
+
+void gen_jumpeq(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
+    llvm::Value *lhs = ir_pop(builder, core);
+    llvm::Value *rhs = ir_pop(builder, core);
+    llvm::Value *cond = builder->CreateICmpEQ(lhs, rhs);
+    llvm::BasicBlock *trueDest = core.getBasicBlock(insn.getArg(0));
+    llvm::BasicBlock *falseDest =
+        core.getBasicBlock(core.getPC() + insn.getSz());
+    builder->CreateCondBr(cond, trueDest, falseDest);
+}
+
+void gen_jumpne(llvm::IRBuilder<> *builder, Core &core, const Insn &insn) {
+    llvm::Value *lhs = ir_pop(builder, core);
+    llvm::Value *rhs = ir_pop(builder, core);
+    llvm::Value *cond = builder->CreateICmpNE(lhs, rhs);
     llvm::BasicBlock *trueDest = core.getBasicBlock(insn.getArg(0));
     llvm::BasicBlock *falseDest =
         core.getBasicBlock(core.getPC() + insn.getSz());

@@ -160,7 +160,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpb";
         m_exec = nullptr;
-        m_genIR = nullptr;
+        m_genIR = gen_jumpb;
         break;
     case CMD_JUMPBE:
         m_isBranch = true;
@@ -168,7 +168,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpbe";
         m_exec = nullptr;
-        m_genIR = nullptr;
+        m_genIR = gen_jumpbe;
         break;
     case CMD_JUMPE:
         m_isBranch = true;
@@ -176,7 +176,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpe";
         m_exec = nullptr;
-        m_genIR = nullptr;
+        m_genIR = gen_jumpeq;
         break;
     case CMD_JUMPNE:
         m_isBranch = true;
@@ -184,7 +184,7 @@ void Insn::decode(const char *pc) {
         m_argv[0] = fetchArg(pc, 0);
         execFName = "do_jumpne";
         m_exec = nullptr;
-        m_genIR = nullptr;
+        m_genIR = gen_jumpne;
         break;
     case CMD_CALL:
         m_isBranch = true;
