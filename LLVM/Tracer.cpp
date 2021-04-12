@@ -59,16 +59,20 @@ void Tracer::stackDump() const {
 }
 
 void Tracer::memoryDump() const {
-#ifdef MEM_DUMP
-    fprintf(m_sout, "\tMemory dump\n");
-    size_t lineLength = 20;
-    for (size_t adr = 0; adr < RAM_SIZE; adr++) {
-        if (adr % lineLength == 0)
-            fprintf(m_sout, "\t\t");
-        fprintf(m_sout, "[%lu]%d ", adr, ((word_t*)m_core->m_memory)[adr]);
-        if (adr % lineLength == 0)
-            fprintf(m_sout, "\n");
+    fprintf(m_sout, "\tRead Field\n");
+    size_t lineLength = 100;
+    for (size_t r = 0; r < lineLength; r++) {
+        for (size_t c = 0; c < lineLength; c++) {
+            fprintf(m_sout, "%c", m_core->m_memory[r * lineLength + c] ? '+' : 'o');
+        }
+        fprintf(m_sout, "\n");
+    }
+    fprintf(m_sout, "\nWrite Field\n");
+    for (size_t r = 0; r < lineLength; r++) {
+        for (size_t c = 0; c < lineLength; c++) {
+            fprintf(m_sout, "%c", m_core->m_memory[10000 + r * lineLength + c] ? '+' : 'o');
+        }
+        fprintf(m_sout, "\n");
     }
     fprintf(m_sout, "\n");
-#endif
 }

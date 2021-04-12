@@ -73,4 +73,5 @@ int main() {
     fclose(cpu_out);
     cpu_destruct(&cpu);
     free(bin);
+    return 0;
 }

@@ -1,6 +1,7 @@
 #ifndef LINKER_H
 #define LINKER_H
 #include <stdio.h>
+#include <stdint.h>
 #include <assert.h>
 
 const char VERSION = 7;
@@ -8,7 +9,7 @@ const unsigned int SIGNATURE =  'kauq';
 const int MAX_CMD_LEN = 10;
 const size_t MAX_NAME_LEN = 20;
 const int MAX_NUM_ARGS = 3;
-const int RAM_SIZE = 100000;
+const size_t RAM_SIZE = 100000;
 
 //config file paths
 
@@ -55,7 +56,7 @@ static int check_binary_source(char* buff)
     int pc = 0;
     int signature = *(int*)buff;
     if (signature != SIGNATURE) {
-        fprintf(stderr, "ERROR in translator. Signature mismatch.\nExpected: %d\nGot: %d\n", SIGNATURE, signature);
+        fprintf(stderr, "ERROR. Signature mismatch.\nExpected: %d\nGot: %d\n", SIGNATURE, signature);
         assert(signature == SIGNATURE);
         return -1;
     }
@@ -63,7 +64,7 @@ static int check_binary_source(char* buff)
 
     char version = buff[pc];
     if (version != VERSION) {
-        fprintf(stderr, "ERROR in translator. Version mismatch.\n File VERSION: %d.\nProgram VERSION: %d.\n Recompile bin and restart program.\n", version, VERSION);
+        fprintf(stderr, "ERROR. Version mismatch.\n File VERSION: %d.\nProgram VERSION: %d.\n Recompile bin and restart program.\n", version, VERSION);
         assert(version == VERSION);
         return -1;
     }
