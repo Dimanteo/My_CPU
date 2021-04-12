@@ -2,6 +2,39 @@
 #include "exec.hpp"
 #include "generate.hpp"
 
+static std::unordered_map<CMD_CODE, const char *> codeToToken = {
+    {CMD_END, "END"},
+    {CMD_PUSH, "PUSH"},
+    {CMD_POP, "POP"},
+    {CMD_ADD, "ADD"},
+    {CMD_SUB, "SUB"},
+    {CMD_MUL, "MUL"},
+    {CMD_DIV, "DIV"},
+    {CMD_SQR, "SQR"},
+    {CMD_SIN, "SIN"},
+    {CMD_COS, "COS"},
+    {CMD_OUT, "OUT"},
+    {CMD_IN, "IN"},
+    {CMD_PUSHX, "PUSHX"},
+    {CMD_JUMP, "JUMP"},
+    {CMD_JUMPA, "JUMPA"},
+    {CMD_JUMPAE, "JUMPAE"},
+    {CMD_JUMPB, "JUMPB"},
+    {CMD_JUMPBE, "JUMPBE"},
+    {CMD_JUMPE, "JUMPE"},
+    {CMD_JUMPNE, "JUMPNE"},
+    {CMD_CALL, "CALL"},
+    {CMD_RET, "RET"},
+    {CMD_POPRAM_NX, "POPRAM_NX"},
+    {CMD_POPRAM_XN, "POPRAM_XN"},
+    {CMD_POPRAM, "POPRAM"},
+    {CMD_PUSHRAM, "PUSHRAM"},
+    {CMD_POPRAM_X, "POPRAM_X"},
+    {CMD_PUSHRAM_X, "PUSHRAM_X"},
+    {CMD_PUSHRAM_NX, "PUSHRAM_NX"},
+    {CMD_PUSHRAM_XN, "PUSHRAM_XN"},
+    {CMD_POWER, "POWER"}};
+
 bool Insn::isBranch() const { return m_isBranch; }
 
 bool Insn::isTerm() const { return m_isTerminator; }
@@ -301,3 +334,5 @@ void Insn::decode(const char *pc) {
         functionCreatorMap.insert(
             {execFName, reinterpret_cast<void *>(m_exec)});
 }
+
+const char *Insn::getToken(CMD_CODE code) { return codeToToken[code]; }

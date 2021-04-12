@@ -38,4 +38,5 @@ class Insn {
     CMD_CODE getCode() const;
     std::string getName() const;
     static void *lazyFunctionCreator(const std::string fname);
+    static const char *getToken(CMD_CODE code);
 };
