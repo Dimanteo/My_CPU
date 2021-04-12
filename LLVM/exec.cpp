@@ -107,13 +107,13 @@ void do_load(Core *core, const Insn *insn) { // pushram
 
 void do_store_x(Core *core, const Insn *insn) { // popram_x
     REG_CODE regi = static_cast<REG_CODE>(insn->getArg(0));
-    core->writeWord(regi / PRECISION, core->pop());
+    core->writeWord(core->getReg(regi) / PRECISION, core->pop());
 }
 
 void do_load_x(Core *core, const Insn *insn) { // pushram_x
     REG_CODE regi = static_cast<REG_CODE>(insn->getArg(0));
     word_t data;
-    core->readWord(regi / PRECISION, &data);
+    core->readWord(core->getReg(regi) / PRECISION, &data);
     core->push(data);
 }
 
@@ -121,7 +121,7 @@ void do_load_nx(Core *core, const Insn *insn) { // pushram_nx
     word_t number = insn->getArg(0);
     REG_CODE regi = static_cast<REG_CODE>(insn->getArg(1));
     word_t data;
-    core->readWord(regi / PRECISION + number, &data);
+    core->readWord(core->getReg(regi) / PRECISION + number, &data);
     core->push(data);
 }
 
@@ -129,6 +129,6 @@ void do_load_xn(Core *core, const Insn *insn) { // pushram_xn
     REG_CODE regi = static_cast<REG_CODE>(insn->getArg(0));
     word_t number = insn->getArg(1);
     word_t data;
-    core->readWord(regi / PRECISION + number, &data);
+    core->readWord(core->getReg(regi) / PRECISION + number, &data);
     core->push(data);
 }

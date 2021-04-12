@@ -65,7 +65,7 @@ void Tracer::memoryDump() const {
     for (size_t adr = 0; adr < RAM_SIZE; adr++) {
         if (adr % lineLength == 0)
             fprintf(m_sout, "\t\t");
-        fprintf(m_sout, "[%lu]%d ", adr, m_core->m_memory[adr]);
+        fprintf(m_sout, "[%lu]%d ", adr, ((word_t*)m_core->m_memory)[adr]);
         if (adr % lineLength == 0)
             fprintf(m_sout, "\n");
     }

@@ -3,8 +3,7 @@
 #include "exec.hpp"
 #include "generate.hpp"
 
-Core::Core()
-    : m_memory(new char[RAM_SIZE * sizeof(word_t)]), m_running(false){};
+Core::Core() : m_memory(new char[RAM_SIZE]), m_running(false){};
 
 Core::~Core() { delete[](m_memory); }
 
@@ -33,10 +32,10 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
         insn.decode(pc);
         decodedInsns.push_back({pc - code, insn});
         nextPC = pc + insn.getSz();
+        size_t offset = nextPC - code;
         if (insn.isBranch()) {
             // Creating new basic block for jump destination
             size_t dest = insn.getArg(0);
-            size_t offset = nextPC - code;
             if (bblockCache.find(dest) == bblockCache.end()) {
                 std::string name = std::to_string(dest);
                 if (insn.getCode() == CMD_CALL) {
@@ -55,13 +54,12 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
                     llvm::BasicBlock::Create(context, name, func);
                 bblockCache.insert({dest, destBB});
             }
-            // End current basic block and switch to new one.
-            if (insn.isTerm() &&
-                bblockCache.find(offset) == bblockCache.end()) {
-                llvm::BasicBlock *nextBB = llvm::BasicBlock::Create(
-                    context, std::to_string(offset), func);
-                bblockCache.insert({offset, nextBB});
-            }
+        }
+        // End current basic block and switch to new one.
+        if (insn.isTerm() && bblockCache.find(offset) == bblockCache.end()) {
+            llvm::BasicBlock *nextBB =
+                llvm::BasicBlock::Create(context, std::to_string(offset), func);
+            bblockCache.insert({offset, nextBB});
         }
     }
 
@@ -119,7 +117,7 @@ void Core::read(address_t adr, size_t nbytes, char *dest) const {
 }
 
 void Core::readWord(address_t adr, word_t *dest) const {
-    *dest = reinterpret_cast<word_t *>(m_memory)[adr];
+    *dest = ((word_t *)m_memory)[adr];
 }
 
 void Core::write(address_t adr, size_t nbytes, char *src) {
@@ -127,7 +125,7 @@ void Core::write(address_t adr, size_t nbytes, char *src) {
 }
 
 void Core::writeWord(address_t adr, word_t src) const {
-    reinterpret_cast<word_t *>(m_memory)[adr] = src;
+    ((word_t *)(m_memory))[adr] = src;
 }
 
 void Core::stop() { m_running = false; }

@@ -20,7 +20,7 @@ LLVM_IR.o : LLVM_IR.cpp
 Tracer.o : Tracer.cpp
 
 RAMTracer.o : Tracer.cpp
-	$(CXX) $(CXXFLAGS) -DMEM_DUMP -c $^ -o $@
+	$(CXX) $(CXXFLAGS) -DMEM_DUMP -c $< -o $@
 
 exec.o : exec.cpp
 
