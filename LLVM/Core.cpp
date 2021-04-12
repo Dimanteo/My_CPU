@@ -56,7 +56,8 @@ void Core::run(char *code, size_t codeOffset, size_t codeSz) {
             }
         }
         // End current basic block and switch to new one.
-        if (insn.isTerm() && bblockCache.find(offset) == bblockCache.end()) {
+        if (insn.isTerm() && (nextPC < entry + codeSz) &&
+            bblockCache.find(offset) == bblockCache.end()) {
             llvm::BasicBlock *nextBB =
                 llvm::BasicBlock::Create(context, std::to_string(offset), func);
             bblockCache.insert({offset, nextBB});
